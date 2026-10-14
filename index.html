@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Goalwright</title>
+<style>:root{color-scheme:light dark} body{margin:0} img{max-width:100%} [hidden]{display:none!important}</style>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Noto+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: consumer fintech shell — sign-in gate, sticky topbar, left nav, one screen at a time; a floating coach panel drives the two guided walkthroughs.
+   Identity: deep peacock-blue primary with a marigold accent for the one thing to do next; cool grey-blue neutrals; Manrope for numbers and headings, Noto Sans for body (clean ₹ glyph). */
+:root{
+  --bg:#F2F5F8; --card:#FFFFFF; --card2:#E9EEF3; --ink:#15212B; --muted:#5E6E7C; --line:#D7DFE6;
+  --primary:#0F5F73; --primary-ink:#FFFFFF; --primary-soft:#DCEEF2;
+  --accent:#E59A2B; --accent-ink:#1B1409; --accent-soft:#FBEBCF;
+  --good:#1E7F4F; --good-soft:#DCF2E5; --warn:#A86A0A; --warn-soft:#FBEBCB; --bad:#B4322F; --bad-soft:#F8DEDC; --info:#2B5FB8; --info-soft:#DEE8FA;
+  --eq:#4E5BB5; --de:#1E8A6B; --go:#C9922B; --re:#8A5A9E; --ca:#6E7F8C;
+  --head:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --body:"Noto Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r:12px; --shadow:0 1px 2px rgba(21,33,43,.05),0 6px 20px rgba(21,33,43,.06);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F161C; --card:#161F27; --card2:#1D2830; --ink:#E7EDF2; --muted:#98A8B5; --line:#2A3741;
+  --primary:#6CC3D6; --primary-ink:#0F161C; --primary-soft:#143540;
+  --accent:#F0B457; --accent-ink:#1B1409; --accent-soft:#3B2C10;
+  --good:#4CC58B; --good-soft:#14331F; --warn:#E6AC4A; --warn-soft:#3A2A0A; --bad:#EF8580; --bad-soft:#3A1716; --info:#86AEF2; --info-soft:#17284A;
+  --eq:#8D97E0; --de:#4FC39F; --go:#E4B35A; --re:#C59AD6; --ca:#93A4B1;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35); color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0F161C; --card:#161F27; --card2:#1D2830; --ink:#E7EDF2; --muted:#98A8B5; --line:#2A3741;
+  --primary:#6CC3D6; --primary-ink:#0F161C; --primary-soft:#143540;
+  --accent:#F0B457; --accent-ink:#1B1409; --accent-soft:#3B2C10;
+  --good:#4CC58B; --good-soft:#14331F; --warn:#E6AC4A; --warn-soft:#3A2A0A; --bad:#EF8580; --bad-soft:#3A1716; --info:#86AEF2; --info-soft:#17284A;
+  --eq:#8D97E0; --de:#4FC39F; --go:#E4B35A; --re:#C59AD6; --ca:#93A4B1;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35); color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;font-family:var(--head);font-weight:700;text-wrap:balance;letter-spacing:-.01em}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--head);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+[hidden]{display:none!important}
+
+/* ---------- sign-in ---------- */
+#login{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;background:
+  radial-gradient(1200px 600px at 10% -10%, color-mix(in srgb,var(--accent) 35%,transparent), transparent 60%),
+  linear-gradient(160deg,#0B3B48 0%,#0F5F73 55%,#12707F 100%)}
+.login-card{background:var(--card);border-radius:18px;padding:30px 30px 24px;width:min(440px,100%);box-shadow:0 24px 70px rgba(0,0,0,.35)}
+.logo{display:inline-flex;align-items:center;gap:8px;font-family:var(--head);font-weight:800;font-size:17px;letter-spacing:-.01em}
+.logo i{width:28px;height:28px;border-radius:8px;background:var(--primary);display:inline-grid;place-items:center;color:var(--primary-ink);font-style:normal;font-size:13px;font-weight:800}
+.login-card h2{font-size:22px;margin-top:14px}
+.login-card .sub{color:var(--muted);margin:4px 0 16px;font-size:13px}
+.fld{display:grid;gap:4px;margin-bottom:10px}
+.fld label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.fld input,.fld select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font:inherit;background:var(--card);color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid transparent;border-radius:9px;padding:9px 14px;font-weight:600;font-size:13px;background:var(--card2);color:var(--ink)}
+.btn.p{background:var(--primary);color:var(--primary-ink)}
+.btn.a{background:var(--accent);color:var(--accent-ink)}
+.btn.o{background:var(--card);border-color:var(--line)}
+.btn.ghost{background:transparent;color:var(--muted)}
+.btn.danger{background:var(--bad-soft);color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.w{width:100%;justify-content:center}
+.demo-accts{margin-top:18px;border-top:1px dashed var(--line);padding-top:14px}
+.demo-accts .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.acct{display:flex;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;cursor:pointer;background:var(--card)}
+.acct:hover{border-color:var(--primary);background:var(--primary-soft)}
+.acct .av{width:38px;height:38px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-weight:800;font-family:var(--head);flex-shrink:0}
+.acct b{display:block;font-size:13.5px}.acct small{color:var(--muted);font-size:11.5px;line-height:1.35;display:block}
+.acct .tag{margin-left:auto;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.login-note{margin-top:12px;font-size:11.5px;color:var(--muted);line-height:1.45}
+.login-err{display:none;background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:8px 10px;font-size:12.5px;margin-bottom:10px}
+
+/* ---------- shell ---------- */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:var(--primary);color:#fff;display:flex;align-items:center;gap:14px;padding:10px 16px;flex-wrap:wrap}
+:root[data-theme="dark"] .topbar,:root:not([data-theme="light"]) .topbar{color:var(--primary-ink)}
+.topbar .logo i{background:#fff;color:#0F5F73}
+.topbar .apptitle{font-weight:600;font-size:14px;line-height:1.2}
+.topbar .apptitle small{display:block;font-weight:400;font-size:11px;opacity:.8}
+.spacer{flex:1}
+.badge{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:4px 12px;font-size:12px;white-space:nowrap}
+.badge b{color:inherit;font-weight:700}
+:root[data-theme="dark"] .badge,:root:not([data-theme="light"]) .badge{background:rgba(0,0,0,.15);border-color:rgba(0,0,0,.3)}
+.user{text-align:right;font-size:12px;line-height:1.25}.user small{opacity:.8}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:800;font-family:var(--head);font-size:12px}
+.signout{background:transparent;border:1px solid rgba(255,255,255,.4);color:inherit;border-radius:8px;padding:5px 10px;font-size:12px}
+.shell{display:flex;min-height:calc(100vh - 52px)}
+.side{width:220px;background:var(--card);border-right:1px solid var(--line);padding:14px 0;flex-shrink:0;display:flex;flex-direction:column}
+.nav{list-style:none;margin:0;padding:0}
+.nav li{padding:11px 18px;cursor:pointer;display:flex;gap:10px;align-items:center;color:var(--muted);font-weight:500;border-left:3px solid transparent}
+.nav li:hover{background:var(--card2)}
+.nav li.active{color:var(--primary);border-left-color:var(--accent);background:var(--primary-soft);font-weight:700}
+.nav .ico{width:22px;height:22px;display:inline-grid;place-items:center;border-radius:6px;background:var(--card2);font-size:11px;font-weight:800;font-family:var(--head)}
+.nav li.active .ico{background:var(--primary);color:var(--primary-ink)}
+.nav .cnt{margin-left:auto;background:var(--accent);color:var(--accent-ink);border-radius:999px;font-size:10.5px;font-weight:800;padding:1px 7px}
+.pill-note{margin:16px 14px 0;padding:12px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:12px;font-size:12px;color:var(--ink)}
+.pill-note b{display:block;font-family:var(--head);margin-bottom:4px}
+.pill-note .btn{margin-top:8px}
+main{flex:1;padding:22px 24px 40px;max-width:1140px;min-width:0}
+h1{font-size:22px;margin-bottom:2px}
+.sub{color:var(--muted);margin-bottom:16px;font-size:13.5px}
+.screen{display:none}.screen.on{display:block}
+@media (max-width:860px){.shell{flex-direction:column}.side{width:auto;border-right:0;border-bottom:1px solid var(--line);padding:6px 0}.nav{display:flex;overflow-x:auto}.nav li{border-left:0;border-bottom:3px solid transparent;white-space:nowrap;padding:9px 12px}.nav li.active{border-bottom-color:var(--accent)}.pill-note{display:none}main{padding:16px}.user{display:none}.badge{display:none}}
+
+/* ---------- cards & kpis ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;min-width:0}
+.kpi .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.kpi .val{font-size:24px;font-weight:800;margin:4px 0 2px;font-family:var(--head);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.kpi .dlt{font-size:12px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.card h3{font-size:14px;margin-bottom:10px}
+.grid2{display:grid;grid-template-columns:1.35fr 1fr;gap:14px;margin-bottom:14px}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}}
+.chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;background:var(--card2);color:var(--muted);white-space:nowrap}
+.chip.good{background:var(--good-soft);color:var(--good)}.chip.warn{background:var(--warn-soft);color:var(--warn)}.chip.bad{background:var(--bad-soft);color:var(--bad)}.chip.info{background:var(--info-soft);color:var(--info)}.chip.acc{background:var(--accent-soft);color:var(--warn)}
+.notice{display:flex;gap:12px;align-items:flex-start;border-radius:var(--r);padding:14px 16px;margin-bottom:14px;border:1px solid}
+.notice.acc{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 50%,transparent)}
+.notice.warn{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 50%,transparent)}
+.notice.good{background:var(--good-soft);border-color:color-mix(in srgb,var(--good) 45%,transparent)}
+.notice b{font-family:var(--head)}
+.notice .btns{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+@media (max-width:600px){.notice{flex-direction:column}.notice .btns{margin-left:0}}
+
+/* goal cards */
+.goalgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.gcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:8px;min-width:0}
+.gcard:hover{border-color:var(--primary)}
+.gcard .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.gcard h4{font-size:14.5px}
+.gcard .when{font-size:12px;color:var(--muted)}
+.gcard .amt{font-family:var(--head);font-weight:800;font-size:18px;letter-spacing:-.02em}
+.gcard .amt small{font-weight:500;color:var(--muted);font-size:12px;font-family:var(--body)}
+.prog{height:8px;background:var(--card2);border-radius:4px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--primary);border-radius:4px}
+.prog i.warn{background:var(--warn)}.prog i.bad{background:var(--bad)}
+.gcard .foot{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.pchip{font-family:var(--head);font-weight:800}
+.pchip.good{color:var(--good)}.pchip.warn{color:var(--warn)}.pchip.bad{color:var(--bad)}
+
+/* plan screen */
+.gtabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.gtab{padding:8px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);font-weight:600;font-size:12.5px;color:var(--muted)}
+.gtab.on{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
+.plan-head{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:12px 0}
+.plan-head .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.plan-head .v{font-family:var(--head);font-weight:800;font-size:18px;letter-spacing:-.02em}
+.plan-head .v small{font-size:11.5px;color:var(--muted);font-weight:500;font-family:var(--body);display:block}
+.saa{display:flex;height:14px;border-radius:5px;overflow:hidden;background:var(--card2);margin:8px 0 6px}
+.saa i{display:block;height:100%}
+.saa .eq{background:var(--eq)}.saa .de{background:var(--de)}.saa .go{background:var(--go)}.saa .re{background:var(--re)}.saa .ca{background:var(--ca)}
+.saa-key{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+.saa-key span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;background:var(--k);vertical-align:-1px}
+.why-box{background:var(--card2);border-radius:10px;padding:12px 14px;font-size:13px;margin-top:10px}
+.why-box b{font-family:var(--head)}
+.inst{display:grid;gap:10px;margin-top:12px}
+.it{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card)}
+.it .n{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.it .n b{font-family:var(--head);font-size:14px}
+.it .n span{font-family:var(--head);font-weight:700;color:var(--primary);white-space:nowrap}
+.it .cat{font-size:11.5px;color:var(--muted)}
+.it .why-t{margin-top:8px;background:transparent;border:1px dashed var(--line);border-radius:8px;padding:5px 10px;font-size:12px;color:var(--primary);font-weight:600}
+.it .why{display:none;margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;font-size:12.5px;display:none}
+.it.open .why{display:block}
+.why .row{display:grid;grid-template-columns:92px 1fr;gap:6px 10px;margin-top:6px}
+.why .row .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding-top:2px}
+.tags{display:flex;flex-wrap:wrap;gap:5px}
+.tag{font-size:11px;padding:2px 8px;border-radius:6px;background:var(--card2);color:var(--muted);border:1px solid var(--line)}
+.tag.peer-good{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,var(--line))}.tag.peer-bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line))}
+.tag.rule{color:var(--info);border-color:color-mix(in srgb,var(--info) 40%,var(--line))}
+.tag.adv{color:var(--warn)}
+.sched{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+.sched th{text-align:left;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:6px 8px;border-bottom:1px solid var(--line)}
+.sched td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+.sched td:last-child,.sched th:last-child{text-align:right;white-space:nowrap}
+.sched tr.tot td{font-weight:700;border-bottom:0;font-family:var(--head)}
+
+/* check-ups */
+.sig{display:grid;grid-template-columns:28px 1fr auto;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:start;font-size:13px}
+.sig:last-child{border-bottom:0}
+.sig .dot{width:10px;height:10px;border-radius:50%;margin:6px auto 0}
+.sig .dot.bad{background:var(--bad)}.sig .dot.warn{background:var(--warn)}.sig .dot.info{background:var(--info)}.sig .dot.good{background:var(--good)}
+.sig small{display:block;color:var(--muted);font-size:11.5px}
+.act{border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;gap:12px;background:var(--card);margin-top:10px}
+.act .no{width:28px;height:28px;border-radius:8px;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;font-family:var(--head);font-weight:800;font-size:12px}
+.act b{font-family:var(--head);font-size:13.5px}
+.act p{margin:4px 0 6px;font-size:12.5px;color:var(--muted)}
+.tl{list-style:none;margin:0;padding:0;border-left:2px solid var(--line);margin-left:6px}
+.tl li{position:relative;padding:0 0 14px 16px;font-size:12.5px}
+.tl li::before{content:"";position:absolute;left:-6px;top:5px;width:10px;height:10px;border-radius:50%;background:var(--card);border:2px solid var(--primary)}
+.tl li.pend::before{border-color:var(--accent);background:var(--accent)}
+.tl small{display:block;color:var(--muted);font-size:11px}
+.meter{position:relative;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--de) 0 30%,var(--go) 30% 60%,var(--eq) 60% 82%,var(--bad) 82%);margin:12px 0 4px;opacity:.9}
+.meter .pin{position:absolute;top:-5px;width:4px;height:18px;border-radius:2px;background:var(--ink);transform:translateX(-2px)}
+.meter .pin.ghost{opacity:.35}
+.scale{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:13px;margin:0}
+.kv dt{color:var(--muted)}.kv dd{margin:0;font-weight:500;min-width:0;overflow-wrap:anywhere}
+
+/* ask */
+.ask{max-width:860px}
+.chat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;min-height:300px;max-height:60vh;overflow-y:auto}
+.msg{display:flex;gap:10px;margin-bottom:14px}
+.msg .who{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-weight:800;font-family:var(--head);font-size:12px;background:var(--card2)}
+.msg.bot .who{background:var(--primary);color:var(--primary-ink)}
+.msg .bub{background:var(--card2);border-radius:12px;padding:10px 14px;font-size:13px;line-height:1.5;max-width:680px;min-width:0}
+.msg.user .bub{background:var(--info-soft)}
+.bub .src{margin-top:8px;font-size:11px;color:var(--muted);border-top:1px dashed var(--line);padding-top:6px}
+.gin{display:flex;gap:8px;margin-top:12px}
+.gin input{flex:1;min-width:0;padding:11px 14px;border:1.5px solid var(--line);border-radius:10px;font:inherit;background:var(--card);color:var(--ink)}
+.sugg{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.sugg span{border:1px dashed color-mix(in srgb,var(--primary) 50%,var(--line));color:var(--primary);border-radius:16px;padding:5px 12px;font-size:12px;cursor:pointer;background:var(--card)}
+.sugg span:hover{background:var(--primary-soft)}
+.mini{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.mini td,.mini th{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}.mini td:last-child,.mini th:last-child{text-align:right}
+
+/* coach panel (walkthrough) */
+#coach{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:90;width:min(380px,calc(100vw - 32px));background:var(--card);border:1px solid var(--line);border-top:4px solid var(--accent);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.25);padding:14px 16px;display:none}
+#coach.on{display:block}
+#coach .step{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;justify-content:space-between}
+#coach h4{font-size:15px;margin:4px 0 6px}
+#coach p{margin:0 0 10px;font-size:13px;color:var(--ink)}
+#coach .dots{display:flex;gap:4px;margin-bottom:10px}
+#coach .dots i{height:4px;flex:1;border-radius:2px;background:var(--card2)}
+#coach .dots i.on{background:var(--accent)}
+#coach .btns{display:flex;gap:8px;justify-content:flex-end}
+.spot{outline:3px solid var(--accent);outline-offset:4px;border-radius:10px;transition:outline-color .3s}
+
+#toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);border-radius:10px;padding:10px 18px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .25s;z-index:200;max-width:calc(100vw - 32px)}
+#toast.on{opacity:1}
+footer{padding:14px 24px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--line)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<!-- ================= SIGN-IN ================= -->
+<div id="login">
+  <div class="login-card">
+    <div class="logo"><i>Gw</i>Goalwright</div>
+    <h2>Investing, one goal at a time</h2>
+    <div class="sub">Sign in to see your goal-funded plan, your check-ups and the reasoning behind every recommendation.</div>
+    <div class="login-err" id="loginErr">Unknown account. Use one of the demo investor logins below.</div>
+    <div class="fld"><label>Mobile or email</label><input id="loginId" placeholder="98xxxxxx12 or you@example.in"></div>
+    <div class="fld"><label>Password</label><input id="loginPass" type="password" value="demo1234"></div>
+    <button class="btn p w" id="loginBtn">Sign in</button>
+    <div class="demo-accts">
+      <div class="lbl">Demo investors — click to sign in and start a walkthrough</div>
+      <div id="acctList"></div>
+    </div>
+    <div class="login-note">Advice is prepared by a SEBI-registered investment adviser and approved before you see it. Synthetic demo data; fictional fund houses; return and inflation assumptions are illustrative, not investment advice.</div>
+  </div>
+</div>
+
+<div class="topbar" id="topbar" hidden>
+  <div class="logo"><i>Gw</i>Goalwright</div>
+  <div class="apptitle">Goal-based investing <small>Advice reviewed by a SEBI-registered adviser</small></div>
+  <div class="spacer"></div>
+  <div class="badge">Adviser of record: <b id="advTxt"></b></div>
+  <div class="user"><b id="uName"></b><br><small id="uMeta"></small></div>
+  <div class="avatar" id="avTxt"></div>
+  <button class="signout" id="signoutBtn">Sign out</button>
+</div>
+
+<div class="shell" id="shell" hidden>
+  <aside class="side">
+    <ul class="nav" id="nav">
+      <li class="active" data-s="home"><span class="ico">H</span>Home</li>
+      <li data-s="plan"><span class="ico">P</span>My plan</li>
+      <li data-s="check"><span class="ico">C</span>Check-ups <span class="cnt" id="checkCnt" hidden></span></li>
+      <li data-s="ask"><span class="ico">A</span>Ask Goalwright</li>
+      <li data-s="profile"><span class="ico">R</span>Profile &amp; risk</li>
+    </ul>
+    <div class="pill-note"><b id="wtTitle">Guided walkthrough</b><span id="wtDesc"></span><br><button class="btn a" id="wtStart">▶ Start walkthrough</button></div>
+  </aside>
+
+  <main>
+    <!-- HOME -->
+    <section class="screen on" id="s-home">
+      <h1 id="homeH"></h1>
+      <div class="sub" id="homeSub"></div>
+      <div id="homeNotice"></div>
+      <div class="kpis" id="kpis"></div>
+      <h3 style="font-size:15px;margin:6px 0 10px">Your goals</h3>
+      <div class="goalgrid" id="goalGrid"></div>
+      <div class="grid2" style="margin-top:14px">
+        <div class="card"><h3>Monthly plan</h3><div id="homeSched"></div></div>
+        <div class="card"><h3>Recent activity</h3><ul class="tl" id="homeTl"></ul></div>
+      </div>
+    </section>
+
+    <!-- PLAN -->
+    <section class="screen" id="s-plan">
+      <h1>My plan</h1>
+      <div class="sub" id="planSub"></div>
+      <div class="gtabs" id="gtabs"></div>
+      <div id="planBody"></div>
+    </section>
+
+    <!-- CHECK-UPS -->
+    <section class="screen" id="s-check">
+      <h1>Check-ups</h1>
+      <div class="sub">Goalwright watches your plan every day: missed SIPs, drift beyond allocation bands, goals slipping, life events and fund-quality changes. Anything that needs a change becomes a review proposal — checked by your adviser, then by you.</div>
+      <div id="checkBody"></div>
+    </section>
+
+    <!-- ASK -->
+    <section class="screen" id="s-ask">
+      <h1>Ask Goalwright</h1>
+      <div class="sub">Plain-language questions about <b>your</b> plan. Answers cite your numbers, the rules applied and the peers you were benchmarked against. Try a what-if such as “add ₹5,000 to retirement”.</div>
+      <div class="ask">
+        <div class="chat" id="chat"></div>
+        <div class="gin"><input id="gq" placeholder="e.g. Why is my house goal only 61% likely?"><button class="btn p" id="gbtn">Ask</button></div>
+        <div class="sugg" id="suggWrap"></div>
+      </div>
+    </section>
+
+    <!-- PROFILE -->
+    <section class="screen" id="s-profile">
+      <h1>Profile &amp; risk</h1>
+      <div class="sub">What we know about you, how we settled your risk level, and the tax facts that shaped your instruments.</div>
+      <div id="profBody"></div>
+    </section>
+  </main>
+</div>
+
+<div id="coach" role="dialog" aria-live="polite">
+  <div class="step"><span id="cStep"></span><span id="cWho"></span></div>
+  <h4 id="cTitle"></h4>
+  <p id="cText"></p>
+  <div class="dots" id="cDots"></div>
+  <div class="btns"><button class="btn ghost" id="cEnd">End tour</button><button class="btn o" id="cBack">Back</button><button class="btn a" id="cNext">Next</button></div>
+</div>
+<div id="toast"></div>
+<footer id="foot" hidden>Demo — synthetic investors and fictional fund houses. Return, inflation and probability figures are illustrative projections, not guarantees or investment advice. In production: plan built by a specialist-agent pipeline over a context graph of past plans, instruments, rules and outcomes; every proposal gated by a SEBI-registered adviser before it reaches you.</footer>
+
+<script>
+/* =====================================================================
+   Goalwright consumer app — data for the two demo investors
+   ===================================================================== */
+const PEER = {
+  "0412":{id:"Peer plan #0412",out:"on track",cls:"good",note:"35, house in 5y at 40/60 with glide"},
+  "0077":{id:"Peer plan #0077",out:"ahead",cls:"good",note:"31, retirement with 10% step-up and an index core"},
+  "0931":{id:"Peer plan #0931",out:"slipped",cls:"bad",note:"33, house in 4y funded 65% equity; sold at −18% in 2025"},
+  "0188":{id:"Peer plan #0188",out:"abandoned",cls:"bad",note:"36, SIP set at 100% of surplus; stopped after 7 months"},
+  "1204":{id:"Peer plan #1204",out:"reworked",cls:"bad",note:"34, ELSS recommended under the new regime — no benefit"},
+  "2203":{id:"Peer plan #2203",out:"on track",cls:"good",note:"44, child abroad in 7y; USD goal with a global FoF sleeve"},
+};
+const RULES = {
+  "R-RISK-03":"Your risk level is the lower of what you said and what you did",
+  "R-EMG-01":"Emergency fund (6× essentials) is funded before any other goal",
+  "R-HZN-01":"Goals within 5 years hold at most 40% equity, gliding to 0% from two years out",
+  "R-SIP-01":"Total SIPs stay within 90% of your monthly surplus; step-ups preferred to a big flat SIP",
+  "R-SIP-02":"A missed SIP is caught up within the quarter, never silently dropped",
+  "R-TAX-01":"ELSS only under the old regime and only up to your unused 80C limit",
+  "R-TAX-02":"NPS Tier-I for the extra ₹50,000 deduction (80CCD(1B)) on 15y+ goals",
+  "R-TAX-03":"Under the new regime only employer NPS (80CCD(2)) is deductible — opt in to corporate NPS",
+  "R-TAX-04":"Rebalancing sells are sized inside the ₹1.25 L annual LTCG exemption where possible",
+  "R-ELIG-01":"REITs/InvITs need a 7y+ horizon and at least Moderate risk; capped at 5%",
+  "R-ELIG-02":"A direct-equity sleeve needs Moderately-aggressive risk or above and income ≥ ₹25 L; capped at 10%",
+  "R-ELIG-03":"Alternatives (AIF) need a ₹1 Cr minimum ticket",
+  "R-GOLD-01":"Sovereign Gold Bonds if a tranche is open, otherwise a gold ETF or secondary-market SGB",
+  "R-INTL-01":"Overseas funds for foreign-currency goals, subject to the AMC's RBI overseas limit",
+  "R-LUMP-01":"Lump sums above three months of SIP go in through a 6-month STP, not all at once",
+  "R-DRIFT-01":"A sleeve that leaves its ±7-point band is rebalanced at the next check-up",
+  "R-FQ-02":"A fund-manager change puts the fund on watch for two quarters — no new money, no panic exit",
+};
+const RS = (...ids)=>ids.map(i=>({id:i,t:RULES[i]}));
+const PS = (...ids)=>ids.map(i=>PEER[i]);
+
+/* money helpers */
+const L = n => "₹" + (n/1e5).toFixed(n%1e5?1:0).replace(/\.0$/,"") + " L";
+const Cr = n => "₹" + (n/1e7).toFixed(2) + " Cr";
+const M = n => n>=1e7 ? Cr(n) : n>=1e5 ? L(n) : "₹"+Math.round(n).toLocaleString("en-IN");
+const R = n => "₹" + Math.round(n).toLocaleString("en-IN");
+
+/* projection helpers (same arithmetic as rules.py) */
+function sipFV(sip,r,months){ const m=r/12; return sip*(((1+m)**months-1)/m)*(1+m); }
+function stepFV(sip,r,years,step){ let t=0; for(let y=0;y<years;y++){ t+=sipFV(sip*(1+step)**y,r,12)*(1+r)**(years-1-y);} return t; }
+function projectGoal(g,extra=0){ const sip=g.sip+extra; return g.seedFV + (g.stepUp ? stepFV(sip,g.r,g.years,g.stepUp) : sipFV(sip,g.r,g.years*12)); }
+function pFromCoverage(g,cov){ const baseCov=projectGoal(g)/g.target; return Math.max(5,Math.min(97,Math.round(g.pNow + (cov-baseCov)*140))); }
+
+const PERSONAS = {
+priya:{
+  id:"priya", name:"Priya Raghavan", first:"Priya", age:34, city:"Bengaluru", login:["9880011221","priya@example.in"],
+  tag:{t:"New plan ready",cls:"acc"}, meta:"34 · Bengaluru · 4 goals",
+  adviser:{name:"R. Menon",reg:"RIA INA000012345"},
+  walk:{title:"Walkthrough 1 · Priya", desc:"First plan: how four goals, one surplus and one adviser become a plan you can accept in 7 steps."},
+  profile:{
+    income:"₹32 L p.a.", takehome:"₹2.0 L / month", expenses:"₹1.15 L / month (incl. car EMI ₹19,500, 18 left)", surplus:85000,
+    regime:"OLD", dependants:"Child (6) · mother (partly dependent)",
+    assets:[["EPF","₹14.2 L"],["PPF (opened 2019)","₹4.1 L"],["Equity mutual funds","₹6.8 L"],["Savings account","₹3.5 L"]],
+    liabilities:[["Car loan","₹3.2 L outstanding · ₹19,500 × 18"]],
+    risk:{stated:{score:68,band:"Moderately aggressive",date:"30-Sep-2026"},observed:{score:54,band:"Moderate",evidence:["Paused SIPs in Mar–Apr 2025 during a −14% drawdown","Redeemed ₹1.2 L within 3% of the trough","Restarted two months later at a lower amount"]},effective:"Moderate",pct:54,pctStated:68},
+    tax:[["Regime","Old regime (Form 12BB confirmed)"],["80C used","₹86,400 — your EPF contribution"],["80C headroom","₹63,600 → ELSS ₹5,000 / month"],["80CCD(1B) headroom","₹50,000 → NPS ₹4,167 / month"]],
+    elig:[["REIT / InvIT","Eligible · Moderate, 24y horizon · cap 5%","good","R-ELIG-01"],["Direct-equity sleeve","Not yet — observed risk is Moderate. Revisit after 12 months of uninterrupted SIPs.","warn","R-ELIG-02"],["Alternatives (AIF)","Not applicable — ₹1 Cr minimum ticket","","R-ELIG-03"]],
+  },
+  plan:{id:"PLN-2026-2201", status:"approved", proposed:"10-Oct-2026", approved:"13-Oct-2026", note:"Agree with no direct-equity sleeve for now; revisit after 12 months of uninterrupted SIPs.", totalSip:74767, lump:350000, pct:88},
+  goals:[
+    {id:"emg", name:"Emergency fund", when:"Now · funded by Jun-2027", years:0.67, r:0.065, target:510000, targetNote:"6 × ₹85,000 essential expenses", seed:350000, seedNote:"your savings account, redeployed", seedFV:350000, sip:20000, stepUp:0, pBooked:99, pNow:99, current:350000,
+     saa:{ca:100}, saaNote:"100% liquid: no market risk on money you may need tomorrow.",
+     why:"This comes first by rule. ₹2.0 L moves from your savings account to a liquid fund and ₹1.5 L to a sweep-in FD today; ₹20,000 a month fills the remaining ₹1.6 L by June 2027, after which that ₹20,000 is redirected to your house goal automatically.",
+     inst:[{n:"Arbor Liquid Fund",cat:"Liquid fund · direct plan",w:"₹2.0 L today + ₹20,000/mo",why:"Money back in your account the next working day; holds only treasury bills and AAA paper. Cheaper than keeping it idle in savings.",peers:PS("0412"),rules:RS("R-EMG-01")},
+           {n:"Sweep-in fixed deposit (your bank)",cat:"Bank FD · instant",w:"₹1.5 L today",why:"The instant tier: breaks automatically if your account runs short, so you never need to sell a fund in a hurry.",peers:[],rules:RS("R-EMG-01")}]},
+    {id:"house", name:"House down-payment", when:"Oct-2031 · 5 years", years:5, r:0.085, target:2490000, targetNote:"₹19.5 L today (20% down + 6% costs on a ₹75 L home) growing 5% a year", seed:680000, seedNote:"your equity mutual funds, switched into this goal", seedFV:1020000, sip:19600, stepUp:0, pBooked:78, pNow:78, current:680000,
+     saa:{eq:40,de:60}, saaNote:"40% equity, 60% debt today; glides to 0% equity from Oct-2029 so a bad year close to the date can't hurt you.", glide:"0 / 100 from Oct-2029",
+     why:"Five years is too short to ride out a deep fall. Equity is capped at 40% by rule — a rule we learnt from Peer plan #0931, where a 4-year house goal held 65% equity, fell 18% in 2025 and slipped two years. Peer plan #0412 used this exact 40/60 glide and is on track. When your emergency fund completes in June 2027, its ₹20,000 joins this goal.",
+     inst:[{n:"Arbor Nifty 50 Index Fund",cat:"Large-cap index · direct plan",w:"40% · ₹7,840/mo + ₹6.8 L switch",why:"The cheapest way to own India's 50 largest companies (expense 0.10%, tracking error 0.07%). Your existing flexi-cap and large-cap funds are switched in here to cut cost. Equity glides to zero from Oct-2029.",peers:PS("0412","0931"),rules:RS("R-HZN-01")},
+           {n:"Sarovar Short Duration Fund",cat:"Debt · short duration",w:"45% · ₹8,820/mo",why:"92% in AAA and government paper, duration 2.1 years — matched to a 5-year goal. Yield to maturity 7.3%.",peers:PS("0412"),rules:RS("R-HZN-01")},
+           {n:"Bank FD ladder",cat:"Fixed deposits · quarterly ladder",w:"15% · ₹2,940/mo",why:"Certainty for the last 18 months before you pay the builder.",peers:[],rules:[]}]},
+    {id:"edu", name:"Child's education", when:"2038 · 12 years", years:12, r:0.11, target:6300000, targetNote:"₹25 L today (4-year undergraduate programme) growing 8% a year", seed:410000, seedNote:"your PPF, extended once to 2039", seedFV:930000, sip:12000, stepUp:0.10, pBooked:83, pNow:83, current:410000,
+     saa:{eq:65,de:25,go:10}, saaNote:"65% equity, 25% debt, 10% gold. Equity steps down from 2033.",
+     why:"Twelve years is long enough for equity to do the heavy lifting, so 65% equity with a 10% gold hedge. Your PPF matures in 2034; extending it once lines it up with 2038–39, so it becomes this goal's debt anchor. The SIP starts at ₹12,000 and steps up 10% a year — a flat SIP would need ₹17,900 today and push your total past the 90% ceiling.",
+     inst:[{n:"Arbor Nifty 50 Index + Arbor Midcap 150 Index",cat:"Index funds · direct plan",w:"45% · ₹5,400/mo",why:"Index core; the midcap sleeve is held to 15% of the goal because your effective risk is Moderate.",peers:PS("0077"),rules:RS("R-RISK-03")},
+           {n:"Kestrel Flexi Cap Fund",cat:"Active · flexi-cap",w:"20% · ₹2,400/mo",why:"Five-year rolling outperformance of +1.8% a year, same manager for 6 years, 4-star. We use active funds only on goals 12 years or longer. Peer plan #0931 held this fund and slipped — but the graph attributes that to a 65% equity allocation on a short goal, not to the fund.",peers:PS("0931"),rules:[]},
+           {n:"PPF (existing) + Sarovar Short Duration",cat:"Debt",w:"25% · ₹1,500/mo top-up",why:"Your ₹4.1 L PPF grows to about ₹9.3 L by 2038 if extended once; the short-duration fund takes the monthly top-up.",peers:[],rules:[]},
+           {n:"Sarovar Gold ETF",cat:"Gold · exchange-traded",w:"10% · ₹1,200/mo",why:"No Sovereign Gold Bond tranche is open this quarter, so the ETF is the fallback hedge against an equity-heavy goal.",peers:[],rules:RS("R-GOLD-01")}]},
+    {id:"ret", name:"Retire at 58", when:"2050 · 24 years", years:24, r:0.11, target:85000000, targetNote:"₹70,000/month today → ₹2.83 L/month at 58 (6% inflation), 25 years of it", seed:27200000, seedNote:"EPF ₹14.2 L + ₹14,400/mo (→ ₹2.22 Cr) and NPS ₹4,167/mo (→ ₹0.50 Cr)", seedFV:27200000, sip:19000, stepUp:0.10, pBooked:74, pNow:74, current:1420000,
+     saa:{eq:65,de:25,go:5,re:5}, saaNote:"65% equity, 25% debt (EPF, NPS, PPF), 5% gold, 5% REIT. No direct-equity sleeve yet.",
+     why:"Your EPF already does a quarter of the work. The ELSS SIP is sized to exactly fill your unused 80C limit (₹63,600), NPS takes the extra ₹50,000 deduction, and a 5% REIT sleeve adds rent-like income. The equity SIP starts at ₹19,000 and steps up 10% a year, like Peer plan #0077 which is now 1.3 years ahead — a flat ₹40,900 would have broken the 90% ceiling, the pattern that made Peer plan #0188 give up after 7 months.",
+     inst:[{n:"Kestrel Tax Saver (ELSS)",cat:"ELSS · 3-year lock-in",w:"₹5,000/mo",why:"Fills your ₹63,600 unused 80C limit exactly, saving about ₹19,800 in tax a year at your slab. The 3-year lock-in is irrelevant on a 24-year goal. Peer plan #1204 got ELSS under the new regime — no benefit — which is why this rule checks your regime first.",peers:PS("1204"),rules:RS("R-TAX-01")},
+           {n:"Arbor Nifty 50 Index + Kestrel Flexi Cap",cat:"Equity core · 60/40",w:"₹12,000/mo · 10% step-up",why:"Low-cost index core with an active sleeve. Starting at 88% of your surplus with a step-up keeps the plan one you can actually sustain.",peers:PS("0077","0188"),rules:RS("R-SIP-01")},
+           {n:"NPS Tier-I · active choice E75 / C15 / G10",cat:"NPS",w:"₹4,167/mo",why:"₹50,000 a year under 80CCD(1B) on top of 80C. Lock-in to 60 is a feature on a retirement goal.",peers:PS("0077"),rules:RS("R-TAX-02")},
+           {n:"Meridian Office REIT",cat:"REIT · listed",w:"5% · ₹1,000/mo",why:"6.4% distribution yield, 89% occupancy. You qualify: Moderate risk and a 24-year horizon.",peers:[],rules:RS("R-ELIG-01")},
+           {n:"Direct-equity sleeve",cat:"Not included",w:"0%",why:"You scored Moderately aggressive on the questionnaire, but you paused SIPs and sold near the 2025 low. We plan to what you've actually tolerated. If the next 12 months of SIPs run uninterrupted, your adviser will revisit this.",peers:[],rules:RS("R-ELIG-02","R-RISK-03"),na:true}]},
+  ],
+  timeline:[["08-Oct-2026","Profile completed","KYC, bank ledger (36 months) and risk questionnaire"],["10-Oct-2026","Plan proposed","Goalwright drafted PLN-2026-2201 — 4 goals, 11 instruments, 8 rules checked"],["13-Oct-2026","Adviser approved","R. Menon: “Agree with no direct-equity sleeve for now; revisit after 12 months of uninterrupted SIPs.”"],["pending","Your acceptance","Accept the plan and set up 6 UPI Autopay mandates"]],
+  checkups:{ status:"none", first:"14-Nov-2026", watching:["SIP debits on all 6 mandates","Equity/debt drift beyond ±7 points on every goal","Goal probability moving more than 10 points","Life events you tell us about — salary, family, loans","Fund-quality events: manager changes, rating moves, mandate drift"] },
+  ask:{
+    sugg:["Why is my house goal only 78% likely?","Why ELSS for me?","Why no direct stocks?","Why only 40% equity for the house?","What if I add ₹5,000 to retirement?","When is my emergency fund done?"],
+    answers:[
+      {k:["house","78"],h:"<b>House down-payment — 78% likely.</b> The target is ₹24.9 L in Oct-2031. Your ₹6.8 L of existing funds should grow to about ₹10.2 L, and ₹19,600 a month at a blended 8.5% covers the remaining ₹14.7 L. 78% rather than higher because the goal is short and equity is capped at 40% (R-HZN-01), so there is less upside to lean on. Two things raise it without extra money: the ₹20,000 emergency SIP joins this goal from Jul-2027, and your car EMI ends in Apr-2028.<div class='src'>Rules: R-HZN-01 · Peers: #0412 on track, #0931 slipped</div>"},
+      {k:["elss","80c"],h:"<b>ELSS fills exactly your unused 80C limit.</b> You're on the old regime. Your EPF contribution already uses ₹86,400 of the ₹1.5 L 80C limit, leaving ₹63,600. A ₹5,000 monthly SIP in Kestrel Tax Saver uses that, saving roughly ₹19,800 a year in tax. We don't recommend more ELSS than the headroom — the 3-year lock-in buys nothing beyond it.<div class='src'>Rule R-TAX-01 · learnt from Peer plan #1204, who was given ELSS under the new regime</div>"},
+      {k:["direct","stocks","sleeve"],h:"<b>No direct stocks yet — because of what you did, not what you said.</b> Your questionnaire scored 68 (Moderately aggressive), but in Mar–Apr 2025 you paused SIPs and redeemed ₹1.2 L near the low. We plan to the lower of the two (R-RISK-03), and a direct-equity sleeve needs Moderately-aggressive risk or above (R-ELIG-02). Your adviser's note: if the next 12 months of SIPs run uninterrupted, this gets revisited.<div class='src'>Rules: R-RISK-03, R-ELIG-02</div>"},
+      {k:["40","equity"],h:"<b>40% equity on a 5-year goal is a rule with a story.</b> Peer plan #0931 — a 33-year-old with a 4-year house goal — held 65% equity, fell 18% in 2025 and had to push the purchase out two years. That plan is the origin of R-HZN-01: at most 40% equity within 5 years, gliding to 0% from two years out. Peer plan #0412 followed it and is on track.<div class='src'>Rule R-HZN-01 · origin Peer plan #0931</div>"},
+      {k:["emergency","done","june"],h:"<b>Emergency fund: complete by June 2027.</b> Target ₹5.1 L (6 × ₹85,000 essentials). ₹3.5 L moves from savings today; ₹20,000 a month fills the remaining ₹1.6 L in 8 months. From Jul-2027 that ₹20,000 is redirected to the house goal automatically.<div class='src'>Rule R-EMG-01</div>"},
+    ]
+  },
+  walkthrough:[
+    {s:"home",spot:"#goalGrid",title:"Meet Priya",text:"34, Bengaluru, ₹32 L income, a 6-year-old and a car loan with 18 EMIs left. Four goals and ₹85,000 a month to fund them. This is what she sees the first time she signs in."},
+    {s:"profile",spot:"#profRisk",title:"What you said vs what you did",text:"Her questionnaire says Moderately aggressive. Her bank ledger says she paused SIPs and sold near the 2025 low. Goalwright plans to the lower of the two and tells her why."},
+    {s:"plan",goal:1,spot:"#planWhy",title:"A near goal gets capped equity",text:"The house is five years out, so equity is held to 40% and glides to zero from 2029. The rule cites the peer plan that taught it — the one that slipped two years."},
+    {s:"plan",goal:3,open:0,spot:"#planInst .it:nth-child(1)",title:"Every pick explains itself",text:"Open any instrument: the reasoning, the peers it was benchmarked against, the rules it satisfies and the adviser who approved it. Here ELSS is sized to her exact unused 80C limit."},
+    {s:"plan",goal:3,open:4,spot:"#planInst .it:nth-child(5)",title:"What was left out, and why",text:"A direct-equity sleeve was considered and declined on observed behaviour — with the condition under which it comes back."},
+    {s:"home",spot:"#homeNotice",title:"Adviser approved — now it's her call",text:"R. Menon reviewed and approved the plan with a note. Nothing moves until Priya accepts and sets up the UPI Autopay mandates."},
+    {s:"ask",ask:"What if I add ₹5,000 to retirement?",spot:"#chat",title:"Ask anything — including what-ifs",text:"Answers use her own numbers and name the rules and peers involved. What-ifs are recomputed live."}
+  ]
+},
+
+arjun:{
+  id:"arjun", name:"Arjun Mehta", first:"Arjun", age:42, city:"Pune", login:["9822003344","arjun@example.in"],
+  tag:{t:"Review awaiting you",cls:"warn"}, meta:"42 · Pune · 13 months in",
+  adviser:{name:"F. D'Souza",reg:"RIA INA000023456"},
+  walk:{title:"Walkthrough 2 · Arjun", desc:"Thirteen months into a plan: missed SIPs, a drifting sleeve, a weaker rupee and a ₹12 L bonus become one adviser-approved review in 7 steps."},
+  profile:{
+    income:"₹58 L p.a.", takehome:"₹3.4 L / month", expenses:"₹2.1 L / month (incl. home-loan EMI ₹62,000 to 2033)", surplus:130000,
+    regime:"NEW", dependants:"Aarav (10) · Ira (4) · spouse earning",
+    assets:[["EPF","₹38 L"],["Equity mutual funds","₹52 L"],["Direct stocks","₹14 L"],["PPF (matures 2039)","₹9 L"],["Fixed deposits","₹8 L"],["Gold","₹6 L"],["Emergency fund (liquid)","₹12.6 L · funded"]],
+    liabilities:[["Home loan","₹48 L outstanding · ₹62,000 EMI to 2033"]],
+    risk:{stated:{score:82,band:"Aggressive",date:"02-Sep-2025"},observed:{score:80,band:"Aggressive",evidence:["Held every SIP through the 2025 drawdown","Added ₹3 L lump sum at −12%","No redemptions in 36 months"]},effective:"Aggressive",pct:80,pctStated:82},
+    tax:[["Regime","New regime — no 80C, no ELSS"],["Employer NPS (80CCD(2))","Opted in: ₹24,000 / month (10% of basic) — deductible under the new regime"],["80CCD(1B)","Not available under the new regime"],["LTCG exemption","₹1.25 L a year — used to size rebalancing sells"]],
+    elig:[["Direct-equity sleeve","Eligible · Aggressive, income ≥ ₹25 L · cap 10% of retirement goal","good","R-ELIG-02"],["REIT / InvIT","Eligible · 16y horizon · cap 5%","good","R-ELIG-01"],["Overseas funds","Eligible for Aarav's USD goal · subject to AMC overseas limit","good","R-INTL-01"],["Alternatives (AIF)","Not applicable — ₹1 Cr minimum ticket","","R-ELIG-03"]],
+  },
+  plan:{id:"PLN-2025-1877", status:"active", booked:"12-Sep-2025", approved:"12-Sep-2025", totalSip:99516, lump:0, pct:77, note:"Step-up applied Sep-2026."},
+  goals:[
+    {id:"car", name:"Car upgrade", when:"Oct-2028 · 3 years", years:2, r:0.075, target:1740000, targetNote:"₹15 L today growing 5% a year", seed:1180000, seedNote:"your FDs plus 13 months of SIPs", seedFV:1360000, sip:18700, stepUp:0, pBooked:91, pNow:93, current:1180000,
+     saa:{de:100}, saaNote:"100% debt. Three years is too short for equity.",
+     why:"Within three years nothing goes into equity. Your FDs grow to about ₹9.8 L; ₹18,700 a month covers the rest. The review proposes putting ₹4 L of your bonus here, which cuts this SIP to ₹8,500 and frees ₹10,200 for Aarav's goal.",
+     inst:[{n:"Sarovar Short Duration Fund",cat:"Debt · short duration",w:"70% · ₹13,090/mo",why:"AAA/government paper, 2.1-year duration, taxed only when you redeem.",peers:PS("0412"),rules:RS("R-HZN-01")},
+           {n:"Bank FD ladder",cat:"Fixed deposits",w:"30% · ₹5,610/mo + ₹8 L existing",why:"Quarterly ladder so cash lands as the purchase approaches.",peers:[],rules:[]}]},
+    {id:"aarav", name:"Aarav's undergraduate abroad", when:"2033 · 8 years", years:7, r:0.10, target:15950000, targetNote:"₹60 L today; was ₹1.29 Cr at 10% a year (8% fees + 3% rupee weakening) — revised to ₹1.60 Cr after the rupee fell 6% this year", seed:3000000, seedNote:"₹30 L of your equity funds, earmarked", seedFV:6430000, sip:37476, stepUp:0.08, pBooked:76, pNow:63, current:3620000,
+     saa:{eq:60,de:30,go:10}, saaNote:"60% equity (incl. 10% global), 30% debt, 10% gold. Glides down from 2031.", glide:"equity steps down from 2031",
+     why:"A dollar-denominated goal. Ten percent of the goal sits in a global equity fund as a currency hedge (R-INTL-01). The target has moved: the rupee weakened 6% in 12 months against the 3% we assumed, taking the target from ₹1.29 Cr to ₹1.60 Cr and the probability from 76% to 63%. The review proposes ₹8 L of your bonus via a 6-month STP plus the ₹10,200 freed from the car goal, which brings it back to about 74%.",
+     inst:[{n:"Arbor Nifty 50 Index Fund",cat:"Large-cap index",w:"30% · ₹11,243/mo",why:"Low-cost core for an 8-year goal.",peers:PS("2203"),rules:[]},
+           {n:"Arbor Global Equity FoF",cat:"International fund of funds",w:"10% · ₹3,748/mo",why:"Fees are in dollars, so part of the corpus should be too. Subscriptions depend on the AMC's RBI overseas limit — when it closes, the SIP parks in the Nifty 50 fund and switches later.",peers:PS("2203"),rules:RS("R-INTL-01")},
+           {n:"Arbor Midcap 150 Index + Kestrel Flexi Cap",cat:"Growth sleeve",w:"20% · ₹7,495/mo",why:"Aggressive risk earns a 20% growth sleeve on an 8-year goal. Kestrel Flexi Cap is on watch after the Sep-2026 manager exit; its SIP routes to the Nifty 50 fund for two quarters.",peers:[],rules:RS("R-FQ-02"),watch:true},
+           {n:"Sarovar Gilt 2033 Target Maturity + Sarovar Short Duration",cat:"Debt",w:"30% · ₹11,243/mo",why:"A government-bond fund that matures the year the fees are due — no reinvestment risk.",peers:PS("2203"),rules:[]},
+           {n:"Sarovar Gold ETF",cat:"Gold",w:"10% · ₹3,748/mo",why:"Gold tends to rise when the rupee falls — a second hedge for a dollar goal.",peers:[],rules:RS("R-GOLD-01")}]},
+    {id:"ira", name:"Ira's undergraduate", when:"2039 · 14 years", years:13, r:0.11, target:8810000, targetNote:"₹30 L today growing 8% a year", seed:900000, seedNote:"your PPF — it matures in 2039, the year she starts", seedFV:2350000, sip:10890, stepUp:0.10, pBooked:85, pNow:84, current:1070000,
+     saa:{eq:70,de:20,go:10}, saaNote:"70% equity, 20% debt (PPF), 10% gold.",
+     why:"Your PPF matures in 2039 — the same year Ira starts — so it is this goal's debt anchor and nothing else is needed on the debt side. Two SIPs were missed in Aug and Sep 2026 when your salary account moved; the review re-authorises the mandate and catches up ₹21,780.",
+     inst:[{n:"Arbor Nifty 50 Index + Arbor Midcap 150 Index",cat:"Index funds",w:"50% · ₹5,445/mo",why:"Index core with a 15% midcap sleeve.",peers:PS("0077"),rules:[]},
+           {n:"Kestrel Flexi Cap Fund",cat:"Active · flexi-cap",w:"20% · ₹2,178/mo",why:"On watch since the manager exit; SIP routed to the Nifty 50 fund for two quarters, no exit.",peers:[],rules:RS("R-FQ-02"),watch:true},
+           {n:"PPF (existing)",cat:"Debt · sovereign",w:"20% · matures 2039",why:"₹9 L today → about ₹23.5 L at maturity, tax-free.",peers:[],rules:[]},
+           {n:"Sarovar Gold ETF",cat:"Gold",w:"10% · ₹1,089/mo",why:"Hedge sleeve.",peers:[],rules:RS("R-GOLD-01")}]},
+    {id:"ret", name:"Retire at 58", when:"2042 · 16 years", years:15, r:0.11, target:83800000, targetNote:"₹1.1 L/month today → ₹2.79 L/month at 58 (6% inflation), 25× annual", seed:45590000, seedNote:"EPF → ₹2.47 Cr · equity funds & stocks → ₹1.91 Cr · corporate NPS → ₹1.14 Cr · gold → ₹0.18 Cr", seedFV:56990000, sip:32450, stepUp:0.10, pBooked:81, pNow:84, current:7400000,
+     saa:{eq:70,de:20,go:5,re:5}, saaNote:"70% equity (incl. a 10% direct-equity sleeve), 20% debt (EPF, corporate NPS), 5% gold, 5% REIT. Equity is at 79% today — outside the band.",
+     why:"Your EPF and corporate NPS do more than half the work. Under the new regime there is no 80C, so no ELSS; employer NPS is the only deduction left and you've opted in. You qualify for a direct-equity sleeve (Aggressive, income ≥ ₹25 L) — a 12-stock large-cap model portfolio capped at 10%. After the midcap rally equity sits at 79% against a 70 ± 7 band; the review proposes a ₹2.6 L switch to debt sized inside your LTCG exemption, so the tax is nil.",
+     inst:[{n:"Direct-equity sleeve · 12 large-caps",cat:"Model portfolio via adviser's RIA account",w:"10% · ₹3,245/mo",why:"You meet both tests: Aggressive risk — stated and observed — and income above ₹25 L. Capped at 10% of the goal; rebalanced quarterly against the model.",peers:[],rules:RS("R-ELIG-02")},
+           {n:"Arbor Nifty 50 Index + Arbor Midcap 150 Index",cat:"Index funds",w:"45% · ₹14,603/mo",why:"Low-cost core; the midcap sleeve is what drifted to 79% and is being trimmed.",peers:PS("0077"),rules:RS("R-DRIFT-01")},
+           {n:"Kestrel Flexi Cap Fund",cat:"Active · flexi-cap",w:"15% · ₹4,868/mo",why:"On watch — manager exit 22-Sep-2026. No new money for two quarters; exit only if rolling outperformance turns negative, which is what two earlier manager changes in the peer graph showed to be the right call.",peers:[],rules:RS("R-FQ-02"),watch:true},
+           {n:"EPF + Corporate NPS (E75 / C15 / G10)",cat:"Debt & retirement accounts",w:"20% · ₹28,800 + ₹24,000/mo",why:"Employer NPS is the one deduction that survives the new regime (80CCD(2), up to 14% of basic).",peers:[],rules:RS("R-TAX-03")},
+           {n:"Sovereign Gold Bond 2031 series (secondary market)",cat:"Gold · SGB",w:"5% · ₹1,623/mo",why:"No primary SGB tranche is open; bought on the exchange, 2.5% coupon, tax-free on maturity.",peers:[],rules:RS("R-GOLD-01")},
+           {n:"Meridian Office REIT",cat:"REIT · listed",w:"5% · ₹1,623/mo",why:"Rent-like income, 6.4% yield.",peers:[],rules:RS("R-ELIG-01")},
+           {n:"ELSS",cat:"Not included",w:"0%",why:"New regime: Section 80C does not apply, so an ELSS lock-in would buy nothing. Peer plan #1204 was given one anyway and had to be reworked.",peers:PS("1204"),rules:RS("R-TAX-01"),na:true}]},
+  ],
+  timeline:[["12-Sep-2025","Plan booked","PLN-2025-1877 · 4 goals · approved by F. D'Souza"],["15-Sep-2026","Step-up applied","SIPs rose 8–10% as planned · total ₹99,516/mo"],["22-Sep-2026","Fund event","Kestrel Flexi Cap lead manager exit → watch"],["05-Oct-2026","Life event","Annual bonus ₹12 L credited"],["11-Oct-2026","Check-up ran","5 signals · severity 12 → review proposed"],["12-Oct-2026","Adviser approved","F. D'Souza approved all 6 actions with a note"],["pending","Your consent","Accept the review to update mandates"]],
+  checkups:{ status:"proposed", id:"REV-2026-0882", ran:"11-Oct-2026", approved:"12-Oct-2026", adviser:"F. D'Souza", note:"Agree. Bonus split is sensible; keep Kestrel on watch rather than exit — we've seen two manager changes resolve fine. Call Arjun before the Aarav assumption change.", score:12,
+    signals:[
+      ["bad","Two SIPs missed — Ira's education","UPI Autopay failed on 5-Aug and 5-Sep-2026: the mandate still points at your old salary account. ₹21,780 behind."],
+      ["bad","Aarav's goal slipped: 76% → 63%","The rupee weakened 6% in 12 months against the 3% assumed. Target revised ₹1.29 Cr → ₹1.60 Cr."],
+      ["warn","Retirement equity drifted to 79%","Band is 70 ± 7. Midcap 150 rallied 38% since booking."],
+      ["warn","Fund on watch: Kestrel Flexi Cap","Lead manager exit announced 22-Sep-2026. Held in 3 of your goals."],
+      ["info","Bonus ₹12 L credited 05-Oct-2026","Sitting in your savings account."]],
+    actions:[
+      ["Re-authorise Ira's SIP and catch up","Set up a new UPI Autopay on your current salary account; two catch-up instalments of ₹10,890 go in with the next debit.",["R-SIP-02"],[]],
+      ["Put ₹4 L of the bonus into the car goal","Into the FD ladder. The car SIP falls from ₹18,700 to ₹8,500 and the goal moves to 97%.",["R-LUMP-01"],["0077"]],
+      ["Put ₹8 L of the bonus into Aarav's goal via a 6-month STP","Parked in Arbor Liquid, moved into the goal's allocation over six months. With the freed car SIP (₹10,200) redirected here, Aarav's goal returns to about 74%.",["R-LUMP-01","R-INTL-01"],["2203"]],
+      ["Trim retirement equity back into band","Switch ₹2.6 L from Arbor Midcap 150 to Sarovar Short Duration. Long-term gain ≈ ₹71,000 — inside your ₹1.25 L exemption, so tax is nil.",["R-DRIFT-01","R-TAX-04"],[]],
+      ["Keep Kestrel Flexi Cap on watch","No new money for two quarters; its ₹14,541 of SIPs route to Arbor Nifty 50 Index meanwhile. Exit only if rolling outperformance turns negative.",["R-FQ-02"],[]],
+      ["Update Aarav's currency assumption","Rupee weakening 3% → 5% a year. Target ₹1.60 Cr stands; revisit at the Apr-2027 check-up.",[],["2203"]]]
+  },
+  ask:{
+    sugg:["Why did Aarav's goal drop to 63%?","Why no ELSS for me?","Why am I allowed direct stocks?","What should I do with my bonus?","What if I add ₹10,000 to Aarav?","Why keep Kestrel Flexi Cap?"],
+    answers:[
+      {k:["aarav","63","drop","rupee"],h:"<b>Aarav's goal: 76% → 63%, because of the rupee.</b> The fees are in dollars. We assumed 3% a year of rupee weakening; it was 6% over the last 12 months. The target moved from ₹1.29 Cr to ₹1.60 Cr. The review puts ₹8 L of your bonus here through a 6-month STP and redirects the ₹10,200 freed from the car goal — together that takes the probability back to about 74%. The 10% global fund and 10% gold sleeves are the built-in hedges.<div class='src'>Rules: R-INTL-01, R-LUMP-01 · Peer: #2203 on track</div>"},
+      {k:["elss","80c","regime"],h:"<b>No ELSS because you're on the new regime.</b> Section 80C doesn't apply, so a 3-year lock-in would buy no tax benefit. Peer plan #1204 was recommended ELSS under the new regime and had to be reworked — that is where the rule comes from. The one deduction that survives is employer NPS under 80CCD(2), which you have opted into at ₹24,000 a month.<div class='src'>Rules: R-TAX-01, R-TAX-03 · origin Peer plan #1204</div>"},
+      {k:["direct","stocks","allowed","sleeve"],h:"<b>Direct stocks: you pass both tests.</b> A direct-equity sleeve needs Moderately-aggressive risk or above and income of ₹25 L or more. Your questionnaire scored 82 and your behaviour matched — you held every SIP through the 2025 fall and added ₹3 L near the low. So a 12-stock large-cap model portfolio runs at 10% of your retirement goal, rebalanced quarterly by your adviser.<div class='src'>Rules: R-ELIG-02, R-RISK-03</div>"},
+      {k:["bonus","12"],h:"<b>Your ₹12 L bonus — the review's proposal.</b> ₹4 L to the car goal's FD ladder (cuts that SIP from ₹18,700 to ₹8,500); ₹8 L to Aarav's goal through a 6-month STP from a liquid fund, because lump sums above three months of SIP never go in all at once. Nothing goes to retirement — it is already at 84% and over its equity band.<div class='src'>Rules: R-LUMP-01 · Peer: #0077 used the same STP pattern</div>"},
+      {k:["kestrel","flexi","manager","watch"],h:"<b>Kestrel Flexi Cap stays — on watch.</b> The lead manager left on 22-Sep-2026. The rule puts the fund on watch for two quarters: no new money (its ₹14,541 of SIPs route to the Nifty 50 fund), no panic exit. Two earlier manager changes in the peer graph resolved fine; the exit trigger is rolling outperformance turning negative.<div class='src'>Rule R-FQ-02 · adviser note, F. D'Souza</div>"},
+      {k:["missed","sip","ira","autopay"],h:"<b>Two missed SIPs on Ira's goal.</b> Your UPI Autopay still points at the old salary account, so the 5-Aug and 5-Sep debits failed. The review sets up a new mandate and adds two catch-up instalments of ₹10,890 to the next debit — a missed SIP is caught up within the quarter, never silently dropped.<div class='src'>Rule R-SIP-02</div>"},
+    ]
+  },
+  walkthrough:[
+    {s:"home",spot:"#homeNotice",title:"Thirteen months in",text:"Arjun's plan has been running since Sep-2025. The daily check-up found five things at once — and turned them into one review that his adviser has already approved."},
+    {s:"check",spot:"#checkSignals",title:"What the monitor saw",text:"Two missed SIPs after a salary-account change, a dollar goal hit by a weaker rupee, a sleeve outside its band, a fund-manager exit and a ₹12 L bonus. Each signal carries its evidence."},
+    {s:"check",spot:"#checkActions",title:"Six actions, each with a rule and a precedent",text:"Catch up the SIP, split the bonus (lump sums go in through an STP), trim equity inside the tax exemption, keep the fund on watch, update the assumption. Approved by F. D'Souza; waiting for Arjun."},
+    {s:"plan",goal:1,spot:"#planWhy",title:"A goal in another currency",text:"Aarav's fees are in dollars, so the goal holds a global fund and gold as hedges. The target moved with the rupee; the plan shows exactly how the review brings the probability back."},
+    {s:"plan",goal:3,open:0,spot:"#planInst .it:nth-child(1)",title:"Eligibility that goes the other way",text:"Where Priya was declined a direct-equity sleeve, Arjun qualifies — same rule, different facts: Aggressive risk, stated and observed, and income above ₹25 L."},
+    {s:"profile",spot:"#profTax",title:"New regime, different instruments",text:"No 80C means no ELSS. The one deduction left is employer NPS, so the plan opts him into corporate NPS and says so."},
+    {s:"ask",ask:"Why did Aarav's goal drop to 63%?",spot:"#chat",title:"Ask why",text:"The assistant answers from his numbers, names the rule and the peer plan, and points at the review action that fixes it."}
+  ]
+}};
+</script>
+
+<script>
+/* =====================================================================
+   App logic — sign-in, navigation, screens, assistant, walkthrough
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const initials = n => n.split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
+let cur=null, curGoal=0, state={}, _toastT=null, tour={on:false,i:0};
+
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(_toastT); _toastT=setTimeout(()=>t.classList.remove("on"),3400); }
+function pcls(p){ return p>=75?"good":p>=65?"warn":"bad"; }
+function saaBar(s){ const order=[["eq","Equity"],["de","Debt"],["go","Gold"],["re","REIT"],["ca","Liquid"]]; return `<div class="saa">${order.filter(([k])=>s[k]).map(([k])=>`<i class="${k}" style="width:${s[k]}%"></i>`).join("")}</div><div class="saa-key">${order.filter(([k])=>s[k]).map(([k,l])=>`<span style="--k:var(--${k})">${l} ${s[k]}%</span>`).join("")}</div>`; }
+function tagsHtml(it){ return `<div class="tags">${(it.rules||[]).map(r=>`<span class="tag rule" title="${esc(r.t)}">${r.id}</span>`).join("")}${(it.peers||[]).map(p=>`<span class="tag peer-${p.cls}" title="${esc(p.note)}">${p.id} · ${p.out}</span>`).join("")}<span class="tag adv">Approved · ${cur.adviser.name}</span></div>`; }
+
+/* ---------- sign-in ---------- */
+$("acctList").innerHTML = Object.values(PERSONAS).map(p=>`<div class="acct" tabindex="0" data-p="${p.id}"><div class="av">${initials(p.name)}</div><div><b>${p.name}</b><small>${p.meta} · ${p.login[0]}</small><small>${p.walk.title}</small></div><span class="tag chip ${p.tag.cls}">${p.tag.t}</span></div>`).join("");
+document.querySelectorAll(".acct").forEach(a=>{ a.onclick=()=>login(a.dataset.p); a.onkeydown=e=>{ if(e.key==="Enter") login(a.dataset.p); }; });
+$("loginBtn").onclick=doLogin; $("loginId").onkeydown=e=>{ if(e.key==="Enter") doLogin(); }; $("loginPass").onkeydown=e=>{ if(e.key==="Enter") doLogin(); };
+function doLogin(){ const v=$("loginId").value.trim().toLowerCase(); const p=Object.values(PERSONAS).find(x=>x.login.includes(v)); if(!p){ $("loginErr").style.display="block"; return; } login(p.id); }
+function login(id){
+  cur=PERSONAS[id]; curGoal=0; state={accepted:false, reviewAccepted:false, asked:false};
+  $("loginErr").style.display="none"; $("login").hidden=true; $("topbar").hidden=false; $("shell").hidden=false; $("foot").hidden=false;
+  $("advTxt").textContent=cur.adviser.name+" · "+cur.adviser.reg; $("uName").textContent=cur.name; $("uMeta").textContent=cur.meta; $("avTxt").textContent=initials(cur.name);
+  $("wtTitle").textContent=cur.walk.title; $("wtDesc").textContent=cur.walk.desc;
+  renderAll(); navTo("home"); endTour();
+  const pend = cur.checkups.status==="proposed" ? 1 : 0; $("checkCnt").hidden=!pend; $("checkCnt").textContent=pend;
+  toast(`Signed in as ${cur.name}. Press “Start walkthrough” for the guided tour.`);
+}
+$("signoutBtn").onclick=()=>{ endTour(); cur=null; $("login").hidden=false; $("topbar").hidden=true; $("shell").hidden=true; $("foot").hidden=true; };
+
+/* ---------- nav ---------- */
+document.querySelectorAll("#nav li").forEach(li=>li.onclick=()=>navTo(li.dataset.s));
+function navTo(s){
+  document.querySelectorAll("#nav li").forEach(li=>li.classList.toggle("active",li.dataset.s===s));
+  document.querySelectorAll(".screen").forEach(sc=>sc.classList.toggle("on",sc.id==="s-"+s));
+  window.scrollTo({top:0});
+}
+
+/* ---------- render ---------- */
+function renderAll(){ renderHome(); renderPlan(); renderCheck(); renderAsk(); renderProfile(); }
+
+function renderHome(){
+  const g=cur.goals, onTrack=g.filter(x=>x.pNow>=75).length;
+  const hr=new Date().getHours(); const greet = hr<12?"Good morning":hr<17?"Good afternoon":"Good evening";
+  $("homeH").textContent=`${greet}, ${cur.first}`;
+  $("homeSub").textContent = cur.id==="priya" ? "Your first goal-funded plan is ready. Here is where every rupee of your ₹85,000 surplus goes, and why." : "Plan PLN-2025-1877 · month 14 · your check-up on 11-Oct found five things worth acting on.";
+  const total = cur.plan.totalSip;
+  const notice = cur.id==="priya"
+    ? (state.accepted
+        ? `<div class="notice good"><div><b>Plan accepted · 6 UPI Autopay mandates created</b><br>First debits on 05-Nov-2026. Your first check-up runs on 14-Nov-2026.</div></div>`
+        : `<div class="notice acc"><div><b>Your plan is ready — approved by ${cur.adviser.name} on ${cur.plan.approved}</b><br>Adviser's note: “${cur.plan.note}” Nothing is invested until you accept.</div><div class="btns"><button class="btn a" id="acceptBtn">Accept plan &amp; set up UPI Autopay</button><button class="btn o" id="talkBtn">Talk to adviser</button></div></div>`)
+    : (state.reviewAccepted
+        ? `<div class="notice good"><div><b>Review REV-2026-0882 accepted</b><br>New mandate for Ira's SIP created · ₹12 L bonus split scheduled · retirement switch placed for the next NAV · Kestrel Flexi Cap on watch until Apr-2027.</div></div>`
+        : `<div class="notice warn"><div><b>A review is waiting for you — approved by ${cur.adviser.name} on ${cur.checkups.approved}</b><br>Two missed SIPs, Aarav's goal at 63%, retirement equity outside its band, a fund on watch and your ₹12 L bonus. Six actions, one tap.</div><div class="btns"><button class="btn a" id="goCheck">See the review</button><button class="btn o" id="talkBtn">Talk to adviser</button></div></div>`);
+  $("homeNotice").innerHTML=notice;
+  if($("acceptBtn")) $("acceptBtn").onclick=acceptPlan;
+  if($("goCheck")) $("goCheck").onclick=()=>navTo("check");
+  if($("talkBtn")) $("talkBtn").onclick=()=>toast(`Call-back requested. ${cur.adviser.name} will call you within one working day.`);
+  const corpus = cur.goals.reduce((s,x)=>s+x.current,0);
+  $("kpis").innerHTML=[
+    ["Monthly SIP", R(total), cur.id==="priya"?`${cur.plan.pct}% of your ₹85,000 surplus`:`${cur.plan.pct}% of your ₹1.3 L surplus · after step-up`],
+    ["Invested towards goals", M(corpus), cur.id==="priya"?"existing assets mapped to goals today":"up from ₹1.08 Cr at booking"],
+    ["Goals on track", `${onTrack} / ${g.length}`, cur.id==="priya"?"probabilities at plan start":"Aarav's goal needs the review"],
+    ["Next step", cur.id==="priya"?(state.accepted?"Check-up 14-Nov":"Accept plan"):(state.reviewAccepted?"Check-up Apr-2027":"Accept review"), cur.id==="priya"?"adviser approved 13-Oct":"adviser approved 12-Oct"],
+  ].map(([l,v,d])=>`<div class="kpi"><div class="lbl">${l}</div><div class="val">${v}</div><div class="dlt">${d}</div></div>`).join("");
+  $("goalGrid").innerHTML=g.map((x,i)=>{ const prog=Math.min(100,Math.round(x.current/x.target*100)); return `<div class="gcard" data-i="${i}" tabindex="0"><div class="top"><div><h4>${x.name}</h4><div class="when">${x.when}</div></div><span class="pchip ${pcls(x.pNow)}">${x.pNow}%</span></div><div class="amt">${M(x.target)} <small>target</small></div><div class="prog"><i class="${pcls(x.pNow)==='good'?'':pcls(x.pNow)}" style="width:${prog}%"></i></div><div class="foot"><span>${M(x.current)} in place</span><span>${R(x.sip)}/mo${x.stepUp?` · +${Math.round(x.stepUp*100)}%/yr`:""}</span></div></div>`; }).join("");
+  document.querySelectorAll(".gcard").forEach(c=>{ c.onclick=()=>{ curGoal=+c.dataset.i; renderPlan(); navTo("plan"); }; c.onkeydown=e=>{ if(e.key==="Enter") c.click(); }; });
+  $("homeSched").innerHTML=`<table class="sched"><thead><tr><th>Goal</th><th>Instruments</th><th>SIP / month</th></tr></thead><tbody>${g.map(x=>`<tr><td>${x.name}</td><td class="muted">${x.inst.filter(i=>!i.na).length}</td><td class="num">${R(x.sip)}</td></tr>`).join("")}${cur.id==="priya"?`<tr><td>NPS Tier-I</td><td class="muted">1</td><td class="num">₹4,167</td></tr>`:""}<tr class="tot"><td>Total</td><td></td><td class="num">${R(total)}</td></tr></tbody></table>${cur.plan.lump?`<div class="muted" style="font-size:12px;margin-top:8px">Plus ${M(cur.plan.lump)} lump sum from savings into the emergency fund on day one.</div>`:""}`;
+  $("homeTl").innerHTML=cur.timeline.map(([d,t,s])=>`<li class="${d==="pending"?"pend":""}"><b>${t}</b><small>${d==="pending"?"Pending":d} · ${s}</small></li>`).join("");
+}
+
+function acceptPlan(){ state.accepted=true; cur.timeline[cur.timeline.length-1]=["14-Oct-2026","You accepted the plan","6 UPI Autopay mandates · first debit 05-Nov-2026"]; renderHome(); toast("Plan accepted. 6 UPI Autopay mandates created — approve each in your UPI app."); }
+function acceptReview(){ state.reviewAccepted=true; cur.checkups.status="accepted"; cur.timeline[cur.timeline.length-1]=["14-Oct-2026","You accepted the review","Mandates updated · bonus split scheduled · switch placed"]; $("checkCnt").hidden=true; renderHome(); renderCheck(); toast("Review accepted. Mandates updated; the retirement switch executes at the next NAV."); }
+
+function renderPlan(){
+  const g=cur.goals, x=g[curGoal];
+  $("planSub").textContent = cur.id==="priya" ? `${cur.plan.id} · proposed ${cur.plan.proposed} · approved by ${cur.adviser.name} on ${cur.plan.approved}` : `${cur.plan.id} · booked ${cur.plan.booked} · ${cur.plan.note}`;
+  $("gtabs").innerHTML=g.map((y,i)=>`<button class="gtab ${i===curGoal?"on":""}" data-i="${i}">${y.name} · ${y.pNow}%</button>`).join("");
+  document.querySelectorAll(".gtab").forEach(b=>b.onclick=()=>{ curGoal=+b.dataset.i; renderPlan(); });
+  const stepTxt = x.stepUp ? ` <small>steps up ${Math.round(x.stepUp*100)}% a year</small>` : ` <small>flat</small>`;
+  $("planBody").innerHTML=`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline"><h3 style="font-size:17px;margin:0">${x.name}</h3><span class="chip ${pcls(x.pNow)}">${x.pNow}% likely${x.pBooked!==x.pNow?` · was ${x.pBooked}%`:""}</span></div>
+      <div class="muted" style="font-size:12.5px">${x.when}</div>
+      <div class="plan-head">
+        <div><div class="k">Target</div><div class="v">${M(x.target)}<small>${x.targetNote}</small></div></div>
+        <div><div class="k">Already working for it</div><div class="v">${M(x.seed)}<small>${x.seedNote} → ${M(x.seedFV)} by the date</small></div></div>
+        <div><div class="k">Monthly SIP</div><div class="v">${R(x.sip)}${stepTxt}</div></div>
+        ${x.glide?`<div><div class="k">Glide</div><div class="v" style="font-size:14px">${x.glide}</div></div>`:""}
+      </div>
+      <div class="k muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em">Strategic allocation</div>
+      ${saaBar(x.saa)}<div class="muted" style="font-size:12.5px;margin-top:4px">${x.saaNote}</div>
+      <div class="why-box" id="planWhy"><b>Why this plan for this goal</b><br>${x.why}</div>
+      <div class="k muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-top:14px">Instruments · tap “Why this?”</div>
+      <div class="inst" id="planInst">${x.inst.map((it,i)=>`<div class="it ${it.na?"na":""}" data-i="${i}" style="${it.na?"opacity:.8;border-style:dashed":""}"><div class="n"><b>${it.n}${it.watch?` <span class="chip warn">on watch</span>`:""}${it.na?` <span class="chip">not included</span>`:""}</b><span>${it.w}</span></div><div class="cat">${it.cat}</div><button class="why-t">Why this?</button><div class="why">${it.why}<div class="row"><div class="k">Checked</div><div>${tagsHtml(it)}</div></div></div></div>`).join("")}</div>
+    </div>`;
+  document.querySelectorAll("#planInst .why-t").forEach(b=>b.onclick=()=>{ const it=b.closest(".it"); it.classList.toggle("open"); b.textContent = it.classList.contains("open") ? "Hide" : "Why this?"; });
+}
+function openInst(i){ const it=document.querySelector(`#planInst .it[data-i="${i}"]`); if(it && !it.classList.contains("open")){ it.classList.add("open"); it.querySelector(".why-t").textContent="Hide"; } }
+
+function renderCheck(){
+  const c=cur.checkups;
+  if(c.status==="none"){
+    $("checkBody").innerHTML=`<div class="grid2"><div class="card"><h3>Nothing to act on yet</h3><p class="muted" style="margin:0 0 10px;font-size:13px">Daily monitoring starts the day your first SIP debits. Your first scheduled check-up is on <b>${c.first}</b>.</p><h3 style="margin-top:14px">What we watch</h3><ul class="tl">${c.watching.map(w=>`<li>${w}</li>`).join("")}</ul></div><div class="card"><h3>How a review happens</h3><ul class="tl"><li><b>Signal</b><small>A missed SIP, drift, slippage, a life event or a fund event</small></li><li><b>Severity score</b><small>Each signal is weighted; a review opens at 5 or more</small></li><li><b>Review proposal</b><small>Every action cites a rule and a peer precedent</small></li><li><b>Adviser approval</b><small>${cur.adviser.name} approves, amends or returns it</small></li><li class="pend"><b>Your consent</b><small>Nothing changes in your portfolio until you accept</small></li></ul></div></div>`;
+    return;
+  }
+  const accepted = c.status==="accepted";
+  $("checkBody").innerHTML=`
+    <div class="notice ${accepted?"good":"warn"}"><div><b>${c.id} · ${accepted?"accepted by you on 14-Oct-2026":"awaiting your consent"}</b><br>Check-up ran ${c.ran} · severity ${c.score} (review opens at 5) · approved by ${c.adviser} on ${c.approved}<br><span class="muted">Adviser's note: “${c.note}”</span></div>${accepted?"":`<div class="btns"><button class="btn a" id="acceptRev">Accept review</button><button class="btn o" id="talkBtn2">Talk to adviser first</button></div>`}</div>
+    <div class="grid2">
+      <div class="card" id="checkSignals"><h3>What the check-up found</h3>${c.signals.map(([cls,t,s])=>`<div class="sig"><span class="dot ${cls}"></span><div><b>${t}</b><small>${s}</small></div><span class="chip ${cls}">${cls==="bad"?"act":cls==="warn"?"watch":"info"}</span></div>`).join("")}</div>
+      <div class="card"><h3>Severity</h3><div class="num" style="font-size:34px;font-weight:800;letter-spacing:-.02em">${c.score} <span class="muted" style="font-size:13px;font-weight:500;font-family:var(--body)">/ threshold 5</span></div><div class="meter"><span class="pin" style="left:${Math.min(98,c.score/15*100)}%"></span></div><div class="scale"><span>0</span><span>5 review</span><span>10</span><span>15</span></div><p class="muted" style="font-size:12.5px;margin:10px 0 0">Missed SIP 2 · goal slipped 3 (+3 for a fall of 10 points or more) · drift breach 2 · fund event 1 · life event 1.</p></div>
+    </div>
+    <div class="card" id="checkActions"><h3>Proposed actions · ${c.actions.length}</h3>${c.actions.map(([t,s,rules,peers],i)=>`<div class="act"><div class="no">${i+1}</div><div><b>${t}</b><p>${s}</p>${tagsHtml({rules:RS(...rules),peers:PS(...peers)})}</div></div>`).join("")}</div>`;
+  if($("acceptRev")) $("acceptRev").onclick=acceptReview;
+  if($("talkBtn2")) $("talkBtn2").onclick=()=>toast(`Call-back requested. ${cur.adviser.name} will call you within one working day.`);
+}
+
+function renderProfile(){
+  const p=cur.profile, r=p.risk;
+  $("profBody").innerHTML=`
+    <div class="grid2">
+      <div class="card"><h3>About you</h3><dl class="kv"><dt>Age · city</dt><dd>${cur.age} · ${cur.city}</dd><dt>Income</dt><dd>${p.income}</dd><dt>Take-home</dt><dd>${p.takehome}</dd><dt>Expenses</dt><dd>${p.expenses}</dd><dt>Monthly surplus</dt><dd><b>${R(p.surplus)}</b></dd><dt>Dependants</dt><dd>${p.dependants}</dd></dl>
+        <h3 style="margin-top:14px">Assets &amp; liabilities</h3><dl class="kv">${p.assets.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("")}${p.liabilities.map(([k,v])=>`<dt>${k}</dt><dd style="color:var(--bad)">${v}</dd>`).join("")}</dl></div>
+      <div>
+        <div class="card" id="profRisk"><h3>Your risk level: <span style="color:var(--primary)">${r.effective}</span></h3>
+          <div class="meter"><span class="pin ghost" style="left:${r.pctStated}%"></span><span class="pin" style="left:${r.pct}%"></span></div><div class="scale"><span>Conservative</span><span>Moderate</span><span>Mod. aggressive</span><span>Aggressive</span></div>
+          <dl class="kv" style="margin-top:12px"><dt>What you said</dt><dd>${r.stated.score}/100 · ${r.stated.band} <span class="muted">(questionnaire, ${r.stated.date})</span></dd><dt>What you did</dt><dd>${r.observed.score}/100 · ${r.observed.band}<ul style="margin:4px 0 0;padding-left:16px;font-size:12.5px;color:var(--muted)">${r.observed.evidence.map(e=>`<li>${e}</li>`).join("")}</ul></dd><dt>We plan to</dt><dd><b>${r.effective}</b> — the lower of the two <span class="tag rule" title="${esc(RULES["R-RISK-03"])}">R-RISK-03</span></dd></dl></div>
+        <div class="card" id="profTax" style="margin-top:14px"><h3>Tax facts that shaped your plan</h3><dl class="kv">${p.tax.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:14px"><h3>Product eligibility</h3><table class="sched"><thead><tr><th>Product</th><th>Result</th><th>Rule</th></tr></thead><tbody>${p.elig.map(([k,v,cls,rule])=>`<tr><td>${k}</td><td><span class="chip ${cls}">${cls==="good"?"eligible":cls==="warn"?"not yet":"n/a"}</span> <span style="font-size:12.5px">${v}</span></td><td><span class="tag rule" title="${esc(RULES[rule]||"")}">${rule}</span></td></tr>`).join("")}</tbody></table></div>
+    <div class="card" style="margin-top:14px"><h3>Your adviser</h3><div style="display:flex;gap:12px;align-items:center"><div class="avatar" style="width:40px;height:40px">${initials(cur.adviser.name)}</div><div><b>${cur.adviser.name}</b><div class="muted" style="font-size:12.5px">SEBI-registered investment adviser · ${cur.adviser.reg} · reviews every plan and every review before you see it</div></div></div></div>`;
+}
+
+/* ---------- assistant ---------- */
+function renderAsk(){
+  $("chat").innerHTML=""; $("gq").value="";
+  addMsg("bot",`Hi ${cur.first}. Ask me anything about your plan — why an instrument was chosen, what a rule means, or a what-if like “add ₹5,000 to ${cur.goals[cur.goals.length-1].name.toLowerCase()}”. I answer from your own numbers and show the rules and peers behind each answer.`);
+  $("suggWrap").innerHTML=cur.ask.sugg.map(s=>`<span>${s}</span>`).join("");
+  document.querySelectorAll("#suggWrap span").forEach(s=>s.onclick=()=>ask(s.textContent));
+}
+function addMsg(role,html){ const d=document.createElement("div"); d.className="msg "+role; d.innerHTML=`<div class="who">${role==="bot"?"Gw":initials(cur.name)}</div><div class="bub">${html}</div>`; $("chat").appendChild(d); $("chat").scrollTop=$("chat").scrollHeight; return d.querySelector(".bub"); }
+$("gbtn").onclick=()=>{ const q=$("gq").value.trim(); if(q){ ask(q); $("gq").value=""; } };
+$("gq").onkeydown=e=>{ if(e.key==="Enter") $("gbtn").click(); };
+function findGoal(q){ const s=q.toLowerCase(); let best=null,bs=0;
+  cur.goals.forEach(g=>{ let sc=g.name.toLowerCase().split(/[^a-z]+/).filter(w=>w.length>=3 && s.includes(w)).length;
+    if(g.id==="ret"&&/retire/.test(s)) sc+=2; if(g.id==="edu"&&/educat|child|school|college/.test(s)) sc+=2; if(g.id==="emg"&&/emergenc/.test(s)) sc+=2; if(g.id==="house"&&/house|home|flat/.test(s)) sc+=2;
+    if(/aarav/.test(s)&&g.id==="aarav") sc+=3; if(/\bira\b/.test(s)&&g.id==="ira") sc+=3;
+    if(sc>bs){bs=sc;best=g;} });
+  return best; }
+function ask(q){
+  addMsg("user",esc(q));
+  const bub=addMsg("bot",`<span class="muted">Working it out…</span>`);
+  setTimeout(()=>{ bub.innerHTML=answer(q); $("chat").scrollTop=$("chat").scrollHeight; },500);
+}
+function answer(q){
+  const s=q.toLowerCase();
+  const wi=s.match(/(?:add|extra|increase|more|put)\s*(?:₹|rs\.?|inr)?\s*([\d,]+)\s*(k|thousand|l|lakh)?/i) || s.match(/₹\s*([\d,]+)\s*(k|thousand|l|lakh)?/i);
+  if(wi && /what if|add|extra|increase|more/.test(s)){
+    let amt=+wi[1].replace(/,/g,""); const u=(wi[2]||"").toLowerCase(); if(u.startsWith("k")||u.startsWith("thousand")) amt*=1000; if(u.startsWith("l")) amt*=1e5;
+    const g=findGoal(q)||cur.goals[cur.goals.length-1];
+    if(g.id==="emg") return `Your emergency fund is already fully funded by June 2027. Extra money is better pointed at the house goal — try “add ${R(amt)} to house”.`;
+    const base=projectGoal(g), nw=projectGoal(g,amt), covB=base/g.target, covN=nw/g.target, pN=pFromCoverage(g,covN);
+    const total=cur.plan.totalSip+amt, cap=0.9*cur.profile.surplus, ok=total<=cap;
+    return `<b>What if you add ${R(amt)} a month to ${g.name}?</b><table class="mini"><tr><th>At the goal date (${g.when.split("·")[0].trim()})</th><th>Now</th><th>With +${R(amt)}</th></tr><tr><td>Projected corpus</td><td>${M(base)}</td><td><b>${M(nw)}</b></td></tr><tr><td>Target</td><td>${M(g.target)}</td><td>${M(g.target)}</td></tr><tr><td>Coverage</td><td>${Math.round(covB*100)}%</td><td><b>${Math.round(covN*100)}%</b></td></tr><tr><td>Chance of reaching it</td><td>${g.pNow}%</td><td><b style="color:var(--${pcls(pN)})">${pN}%</b></td></tr></table><div style="margin-top:8px">Total SIPs would be ${R(total)} a month — ${Math.round(total/cur.profile.surplus*100)}% of your surplus, ${ok?`inside the 90% ceiling.`:`<b style="color:var(--bad)">above the 90% ceiling (${R(cap)})</b>. Your adviser would need to waive R-SIP-01, or you could start smaller with a step-up.`}</div><div class="src">Projection at ${Math.round(g.r*100)}% blended return${g.stepUp?` with your ${Math.round(g.stepUp*100)}% annual step-up`:""} · rule R-SIP-01 · illustrative, not a guarantee</div>`;
+  }
+  const hit=cur.ask.answers.find(a=>a.k.some(k=>s.includes(k)));
+  if(hit) return hit.h;
+  const g=findGoal(q);
+  if(g) return `<b>${g.name} — ${g.pNow}% likely.</b> Target ${M(g.target)} (${g.targetNote}). ${M(g.seed)} is already working for it (${g.seedNote}) and the SIP is ${R(g.sip)} a month${g.stepUp?` stepping up ${Math.round(g.stepUp*100)}% a year`:""}. ${g.why}<div class='src'>Open “My plan → ${g.name}” for every instrument's reasoning</div>`;
+  if(/adviser|who approved|sebi/.test(s)) return `Your adviser of record is <b>${cur.adviser.name}</b>, a SEBI-registered investment adviser (${cur.adviser.reg}). Every plan and every review is approved by the adviser before you see it, and the approval is recorded against each instrument.`;
+  if(/rule|r-/.test(s)){ const id=(s.match(/r-[a-z]+-\d+/)||[])[0]; if(id&&RULES[id.toUpperCase()]) return `<b>${id.toUpperCase()}</b> — ${RULES[id.toUpperCase()]}.`; return `<b>Rules used in your plan</b><ul style="margin:6px 0 0;padding-left:18px">${Object.entries(RULES).slice(0,8).map(([k,v])=>`<li><b>${k}</b> — ${v}</li>`).join("")}</ul>`; }
+  return `I can explain any goal, instrument or rule in your plan, or run a what-if. Try one of the suggestions below, or ask about a goal by name.`;
+}
+
+/* ---------- guided walkthrough ---------- */
+$("wtStart").onclick=()=>startTour(); $("cNext").onclick=()=>tourStep(tour.i+1); $("cBack").onclick=()=>tourStep(tour.i-1); $("cEnd").onclick=endTour;
+function startTour(){ tour={on:true,i:0}; $("coach").classList.add("on"); tourStep(0); }
+function clearSpot(){ document.querySelectorAll(".spot").forEach(e=>e.classList.remove("spot")); }
+function tourStep(i){
+  const steps=cur.walkthrough; if(i<0) i=0; if(i>=steps.length){ endTour(); toast("Walkthrough complete. Explore freely, or sign out to try the other investor."); return; }
+  tour.i=i; const st=steps[i]; clearSpot();
+  navTo(st.s);
+  if(st.s==="plan"){ curGoal=st.goal||0; renderPlan(); if(st.open!==undefined) openInst(st.open); }
+  if(st.s==="ask" && st.ask && !state.asked){ state.asked=true; ask(st.ask); }
+  $("cStep").textContent=`Step ${i+1} of ${steps.length}`; $("cWho").textContent=cur.walk.title; $("cTitle").textContent=st.title; $("cText").textContent=st.text;
+  $("cDots").innerHTML=steps.map((_,j)=>`<i class="${j<=i?"on":""}"></i>`).join("");
+  $("cBack").disabled=i===0; $("cNext").textContent = i===steps.length-1 ? "Finish" : "Next";
+  setTimeout(()=>{ const el=document.querySelector(st.spot); if(el){ el.classList.add("spot"); el.scrollIntoView({behavior:"smooth",block:"center"}); } },60);
+}
+function endTour(){ tour.on=false; $("coach").classList.remove("on"); clearSpot(); }
+</script>
+
+</body>
+</html>

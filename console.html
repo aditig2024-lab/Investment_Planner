@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Goalwright</title>
+<style>:root{color-scheme:light dark} body{margin:0} img{max-width:100%} [hidden]{display:none!important}</style>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: three-column operations console — investor + pipeline | context graph + run trace | shared PlanContext file. Same chassis as Claimwright; palette shifted to a ledger-green accent for a wealth-management desk. */
+:root{
+  --bg:#F3F4F0; --surface:#FFFFFF; --surface2:#E9ECE5; --ink:#17201F; --ink2:#5B6966; --line:#D4DAD3;
+  --accent:#1F6F5E; --accent-ink:#FFFFFF;
+  --good:#1D7F52; --good-bg:#DDF2E6; --warn:#A96A0B; --warn-bg:#FBEBCB; --crit:#B23232; --crit-bg:#F9DEDE;
+  --trace:#B8740A; --trace-bg:#FFF0D2;
+  --ag-orch:#17201F; --ag-intake:#2E6FCB; --ag-goal:#5F5AA8; --ag-alloc:#1B8A64; --ag-rules:#B8542E; --ag-sel:#8A5A9E; --ag-graph:#B8740A; --ag-human:#5B6966;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --radius:6px; --shadow:0 1px 2px rgba(23,32,31,.06),0 4px 14px rgba(23,32,31,.05);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1514; --surface:#161D1C; --surface2:#1E2726; --ink:#E6ECEA; --ink2:#97A6A2; --line:#2B3634;
+  --accent:#6FC7B2; --accent-ink:#0F1514;
+  --good:#46C58A; --good-bg:#12331F; --warn:#E5AA45; --warn-bg:#3A2A0A; --crit:#EE7B7B; --crit-bg:#3A1616;
+  --trace:#F0B54B; --trace-bg:#3A2A0A;
+  --ag-orch:#E6ECEA; --ag-intake:#6FA3EA; --ag-goal:#9D98E6; --ag-alloc:#4FCB9C; --ag-rules:#EE8B6E; --ag-sel:#C59AD6; --ag-graph:#F0B54B; --ag-human:#97A6A2;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3); color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0F1514; --surface:#161D1C; --surface2:#1E2726; --ink:#E6ECEA; --ink2:#97A6A2; --line:#2B3634;
+  --accent:#6FC7B2; --accent-ink:#0F1514;
+  --good:#46C58A; --good-bg:#12331F; --warn:#E5AA45; --warn-bg:#3A2A0A; --crit:#EE7B7B; --crit-bg:#3A1616;
+  --trace:#F0B54B; --trace-bg:#3A2A0A;
+  --ag-orch:#E6ECEA; --ag-intake:#6FA3EA; --ag-goal:#9D98E6; --ag-alloc:#4FCB9C; --ag-rules:#EE8B6E; --ag-sel:#C59AD6; --ag-graph:#F0B54B; --ag-human:#97A6A2;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3); color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45;padding-inline:16px;padding-block:0 32px;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;text-wrap:balance;font-weight:600}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--mono)}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- top bar ---------- */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding-block:16px 12px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand h1{font-size:20px;letter-spacing:-.01em}
+.brand .sub{color:var(--ink2);font-size:13px}
+.tabs{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.tab{border:1px solid transparent;background:transparent;padding:6px 12px;border-radius:999px;color:var(--ink2);font-weight:500}
+.tab[aria-selected="true"]{background:var(--surface);border-color:var(--line);color:var(--ink);box-shadow:var(--shadow)}
+.sdk{font-family:var(--mono);font-size:11px;color:var(--ink2);border:1px solid var(--line);border-radius:4px;padding:2px 8px}
+
+/* ---------- scenario + controls ---------- */
+.controls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:14px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--surface);flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:7px 12px;font-weight:500;color:var(--ink2)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:7px 14px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.speed{display:flex;align-items:center;gap:6px;color:var(--ink2);font-size:12px}
+.speed input{accent-color:var(--accent)}
+.status{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink2)}
+
+/* ---------- layout ---------- */
+.grid{display:grid;grid-template-columns:270px minmax(0,1fr) 360px;gap:16px;align-items:start}
+@media (max-width:1100px){.grid{grid-template-columns:250px minmax(0,1fr)} .col-right{grid-column:1/-1}}
+@media (max-width:760px){.grid{grid-template-columns:1fr} .col-right{grid-column:auto}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);min-width:0}
+.panel > .ph{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.panel > .ph h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink2);font-weight:600}
+.pb{padding:12px 14px}
+
+/* investor card */
+.claim-id{font-family:var(--mono);font-size:13px;color:var(--ink2)}
+.claim-head{font-size:16px;font-weight:600;margin:2px 0 8px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}
+.kv dt{color:var(--ink2)}.kv dd{margin:0;font-weight:500;min-width:0;overflow-wrap:anywhere}
+.docs{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.doc{font-size:11px;padding:3px 8px;border-radius:4px;background:var(--surface2);color:var(--ink2);font-family:var(--mono)}
+.goals{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:5px}
+.goals li{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;border-top:1px dashed var(--line);padding-top:5px}
+.goals li b{font-weight:600}.goals li span{color:var(--ink2);font-family:var(--mono);font-size:11px;white-space:nowrap}
+
+/* pipeline */
+.pipe{display:flex;flex-direction:column;align-items:stretch;gap:0}
+.stage{border:1.5px solid var(--line);border-radius:6px;padding:7px 9px;background:var(--surface);position:relative;transition:border-color .3s,box-shadow .3s}
+.stage .sn{font-weight:600;font-size:12.5px;display:flex;justify-content:space-between;gap:6px;align-items:baseline}
+.stage .sr{font-size:11px;color:var(--ink2);margin-top:1px}
+.stage .st{font-family:var(--mono);font-size:10.5px;color:var(--ink2);white-space:nowrap}
+.stage .so{font-family:var(--mono);font-size:10.5px;color:var(--c);margin-top:3px;min-height:0}
+.stage.active{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 18%,transparent)}
+.stage.active .st{color:var(--c)}
+.stage.done{border-color:var(--c);background:color-mix(in srgb,var(--c) 7%,var(--surface))}
+.stage.waiting{border-color:var(--warn);border-style:dashed;background:var(--warn-bg)}
+.stage.skip{opacity:.55}
+.conn{height:16px;width:2px;background:var(--line);margin:0 auto}
+.fan{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10.5px;color:var(--trace);padding:2px 0}
+.fan::before,.fan::after{content:"";flex:1;border-top:1.5px dashed var(--trace)}
+.lanes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.lanes .stage{padding:6px 7px}
+.lanes .sn{font-size:11.5px;flex-direction:column;gap:0}
+.lanes .sr{display:none}
+.lanes .so{font-size:10px;word-break:break-word}
+.clock{display:flex;gap:14px;font-family:var(--mono);font-size:12px;color:var(--ink2);align-items:baseline;flex-wrap:wrap}
+.clock b{color:var(--ink);font-weight:600;font-size:14px}
+.clock .seq{color:var(--ink2)}
+.clock .save{color:var(--good);font-weight:600}
+
+/* trace */
+.trace{max-height:540px;overflow:auto;padding:6px 0}
+.tr{display:grid;grid-template-columns:8px 1fr;gap:12px;padding:8px 14px;border-left:3px solid transparent;animation:in .25s ease-out}
+@media (prefers-reduced-motion:reduce){.tr{animation:none}}
+@keyframes in{from{opacity:.2;transform:translateY(4px)}to{opacity:1;transform:none}}
+.tr .bar{width:8px;border-radius:2px;background:var(--c)}
+.tr > div{min-width:0}
+.tr .who{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--c)}
+.tr .what{font-size:13px;margin-top:2px}
+.tr .call{font-family:var(--mono);font-size:12px;background:var(--surface2);border-radius:4px;padding:6px 8px;margin-top:6px;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+.tr .call b{color:var(--c);font-weight:500}
+.tr.kind-graph .call{background:var(--trace-bg)}
+.tr.par{border-left-color:color-mix(in srgb,var(--c) 55%,transparent)}
+.tr .who .lane{font-weight:500;color:var(--trace);margin-left:6px;letter-spacing:0;text-transform:none}
+.tick{display:flex;align-items:center;gap:8px;padding:6px 14px 0;font-family:var(--mono);font-size:10.5px;color:var(--ink2)}
+.tick::after{content:"";flex:1;border-top:1px solid var(--line)}
+.tick.par{color:var(--trace)}.tick.par::after{border-top-style:dashed;border-color:var(--trace)}
+.tr.kind-hitl{background:var(--warn-bg);border-left-color:var(--warn)}
+.tr.kind-final{background:var(--good-bg);border-left-color:var(--good)}
+.tr.kind-final.crit{background:var(--crit-bg);border-left-color:var(--crit)}
+.empty{padding:28px 14px;color:var(--ink2);text-align:center;font-size:13px}
+
+/* graph */
+.graph-wrap{overflow-x:auto}
+svg.graph{width:100%;min-width:600px;height:auto;display:block;font-family:var(--sans)}
+.gn{cursor:default}
+.gn .shape{fill:var(--surface);stroke:var(--line);stroke-width:1.5;transition:all .3s}
+.gn text{fill:var(--ink);font-size:11px}
+.gn .sub{fill:var(--ink2);font-size:9.5px;font-family:var(--mono)}
+.gn.t-Plan .shape{fill:var(--surface2)}
+.gn.t-Rule .shape{fill:color-mix(in srgb,var(--ag-rules) 10%,var(--surface));stroke:color-mix(in srgb,var(--ag-rules) 60%,var(--line))}
+.gn.t-Adviser .shape{stroke-dasharray:3 2}
+.gn.t-New .shape{stroke-dasharray:4 3;stroke:var(--accent);fill:var(--surface)}
+.gn.visited .shape{stroke:var(--trace);stroke-width:2;stroke-dasharray:none}
+.gn.hl .shape{stroke:var(--trace);stroke-width:3;fill:var(--trace-bg)}
+.gn.flag .shape{stroke:var(--crit);fill:var(--crit-bg)}
+.gn.dim{opacity:.35}
+.ge{stroke:var(--line);stroke-width:1.4;fill:none;transition:all .3s}
+.ge.visited{stroke:var(--trace);stroke-width:2}
+.ge.hl{stroke:var(--trace);stroke-width:3}
+.ge.dim{opacity:.25}
+.gl{font-size:8.5px;fill:var(--ink2);font-family:var(--mono)}
+.out-chip{font-size:8.5px;font-weight:600;font-family:var(--mono)}
+.out-SLIPPED,.out-ABANDONED{fill:var(--crit)}.out-REWORKED,.out-WATCH{fill:var(--warn)}.out-ON_TRACK,.out-AHEAD,.out-ACTIVE{fill:var(--good)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--ink2);padding:8px 14px;border-top:1px solid var(--line)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:50%;display:inline-block;border:2px solid var(--line)}
+.legend i.v{border-color:var(--trace)} .legend i.h{background:var(--trace-bg);border-color:var(--trace)} .legend i.f{background:var(--crit-bg);border-color:var(--crit)} .legend i.n{border-style:dashed;border-color:var(--accent)}
+
+/* right column: plan file */
+.section{padding:12px 14px;border-bottom:1px solid var(--line)}
+.section:last-child{border-bottom:0}
+.section h4{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--c,var(--ink2));display:flex;justify-content:space-between;align-items:center;gap:8px}
+.section .pending{color:var(--ink2);font-size:12px;font-style:italic;margin-top:6px}
+.section .kv{margin-top:8px}
+.chip{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface2);color:var(--ink2);white-space:nowrap}
+.chip.good{background:var(--good-bg);color:var(--good)}.chip.warn{background:var(--warn-bg);color:var(--warn)}.chip.crit{background:var(--crit-bg);color:var(--crit)}
+.meter{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--good) 0 45%,var(--warn) 45% 70%,var(--crit) 70%);position:relative;margin:10px 0 4px;opacity:.85}
+.meter .pin{position:absolute;top:-5px;width:4px;height:18px;background:var(--ink);border-radius:2px;transform:translateX(-2px);transition:left .5s}
+.meter-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--ink2);font-family:var(--mono)}
+.score{font-size:26px;font-weight:600;letter-spacing:-.02em;margin-top:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.flags{margin:8px 0 0;padding-left:16px;font-size:12.5px}
+.flags li{margin:3px 0}
+.flags li.miti{color:var(--good)}
+.flags li.bad{color:var(--crit)}
+table.val{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+table.val th{text-align:left;color:var(--ink2);font-weight:500;padding:4px 0;border-bottom:1px solid var(--line);font-size:11px}
+table.val td{padding:4px 0;border-bottom:1px dashed var(--line);vertical-align:top}
+table.val td:nth-child(n+2),table.val th:nth-child(n+2){text-align:right;white-space:nowrap}
+table.val td.infl{color:var(--crit);font-weight:600}
+table.val td.ok{color:var(--good);font-weight:600}
+table.val tr.total td{font-weight:600;border-bottom:0;border-top:1px solid var(--ink)}
+.payable{display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;gap:8px}
+.payable .amt{font-size:24px;font-weight:600;letter-spacing:-.02em}
+.decision{border-radius:6px;padding:12px;margin-top:8px;border:1px solid var(--line)}
+.decision.warn{background:var(--warn-bg);border-color:var(--warn)}
+.decision.good{background:var(--good-bg);border-color:var(--good)}
+.decision.crit{background:var(--crit-bg);border-color:var(--crit)}
+.decision .d1{font-weight:700;font-size:15px}
+.decision .d2{font-size:12.5px;margin-top:4px}
+.prec{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.prec span{font-family:var(--mono);font-size:11px;padding:2px 6px;border-radius:4px;background:var(--surface);border:1px solid var(--line)}
+.prec span.r{border-color:color-mix(in srgb,var(--ag-rules) 50%,var(--line));color:var(--ag-rules)}
+.prec span.bad{border-color:var(--crit);color:var(--crit)}
+.hitl{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.hitl .btn.ok{background:var(--good);color:#fff;border-color:var(--good)}
+.hitl .btn.no{border-color:var(--crit);color:var(--crit)}
+.booked{font-family:var(--mono);font-size:12px;margin-top:8px;padding:8px;background:var(--surface2);border-radius:4px;white-space:pre-wrap}
+
+/* allocation bars */
+.saa{display:grid;gap:8px;margin-top:8px}
+.saa .row{font-size:12px}
+.saa .row .lbl{display:flex;justify-content:space-between;color:var(--ink2);margin-bottom:3px;gap:8px}
+.saa .row .lbl b{color:var(--ink);font-weight:600}
+.bar{display:flex;height:10px;border-radius:3px;overflow:hidden;background:var(--surface2)}
+.bar i{display:block;height:100%}
+.bar .eq{background:var(--ag-goal)}.bar .de{background:var(--ag-alloc)}.bar .go{background:var(--trace)}.bar .re{background:var(--ag-sel)}.bar .ca{background:var(--ink2)}
+.saa-key{display:flex;gap:10px;flex-wrap:wrap;font-size:10.5px;color:var(--ink2);margin-top:4px}
+.saa-key span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;background:var(--k)}
+
+/* instruments */
+.inst{margin-top:8px;display:grid;gap:8px}
+.inst .it{border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:12px}
+.inst .it .n{display:flex;justify-content:space-between;gap:8px;align-items:baseline;font-weight:600}
+.inst .it .n span{font-family:var(--mono);font-size:11px;color:var(--ink2);font-weight:500;white-space:nowrap}
+.inst .it .why{color:var(--ink2);margin-top:3px;font-size:11.5px}
+.inst .it .meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.inst .it .meta span{font-family:var(--mono);font-size:10px;padding:1px 5px;border-radius:3px;background:var(--surface2);color:var(--ink2)}
+.inst .it .meta span.r{color:var(--ag-rules)}.inst .it .meta span.p{color:var(--trace)}.inst .it .meta span.a{color:var(--ag-human)}
+.gh{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink2);margin-top:10px;font-weight:600}
+
+/* architecture */
+.arch{padding:14px;overflow-x:auto}
+.arch svg{width:100%;height:auto;min-width:720px;display:block}
+.arch .box{fill:var(--surface);stroke:var(--line);stroke-width:1.5;rx:6}
+.arch .box.orch{stroke:var(--ink);stroke-width:2}
+.arch .box.graphdb{fill:var(--trace-bg);stroke:var(--trace)}
+.arch .box.human{fill:var(--warn-bg);stroke:var(--warn);stroke-dasharray:5 3}
+.arch .box.loop{fill:color-mix(in srgb,var(--accent) 8%,var(--surface));stroke:var(--accent)}
+.arch text{fill:var(--ink);font-size:12px}
+.arch .t2{fill:var(--ink2);font-size:10.5px;font-family:var(--mono)}
+.arch .ar{stroke:var(--ink2);stroke-width:1.4;fill:none;marker-end:url(#arr)}
+.arch .ar.g{stroke:var(--trace)}
+.arch .ar.h{stroke:var(--warn);stroke-dasharray:4 3}
+.arch .ar.l{stroke:var(--accent);stroke-dasharray:6 3}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;padding:0 14px 14px}
+.note h4{font-size:13px;margin-bottom:4px}
+.note p{margin:0;font-size:13px;color:var(--ink2)}
+.note code{font-family:var(--mono);font-size:12px;color:var(--ink)}
+
+/* code */
+.files{display:flex;gap:4px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line)}
+.files button{border:1px solid var(--line);background:var(--surface2);border-radius:4px;padding:4px 10px;font-family:var(--mono);font-size:12px;color:var(--ink2)}
+.files button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+pre.code{margin:0;padding:14px;overflow:auto;font-family:var(--mono);font-size:12px;line-height:1.55;max-height:70vh;color:var(--ink)}
+.hljs-keyword,.hljs-built_in{color:var(--ag-goal)}.hljs-string{color:var(--ag-alloc)}.hljs-comment{color:var(--ink2);font-style:italic}
+.hljs-number{color:var(--trace)}.hljs-title,.hljs-title.function_{color:var(--ag-intake)}.hljs-meta{color:var(--ag-rules)}.hljs-params{color:var(--ink)}
+.view[hidden]{display:none}
+.foot{margin-top:18px;font-size:12px;color:var(--ink2)}
+</style>
+
+<header class="top">
+  <div class="brand"><h1>Goalwright</h1><span class="sub">Agentic goal-based investment planning</span></div>
+  <span class="sdk">openai-agents · Runner.run · asyncio.gather · needs_approval</span>
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-view="walk">Walkthrough</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="arch">Architecture</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="code">Code</button>
+  </nav>
+</header>
+
+<!-- ============================ WALKTHROUGH ============================ -->
+<section id="view-walk" class="view">
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Scenario">
+      <button id="scA" aria-pressed="true">INV-2026-7731 · new plan</button>
+      <button id="scB" aria-pressed="false">PLN-2026-2201 · 14-month review</button>
+    </div>
+    <button class="btn primary" id="play">▶ Run agents</button>
+    <button class="btn" id="step">Step</button>
+    <button class="btn" id="reset">Reset</button>
+    <label class="speed">speed <input id="speed" type="range" min="1" max="5" value="3"></label>
+    <div class="clock" id="clock" style="margin-left:auto"><span>wall clock <b id="ck-par">0s</b></span><span class="seq">sequential <b id="ck-seq" style="color:var(--ink2)">0s</b></span><span class="save" id="ck-save"></span></div>
+    <span class="status" id="status" style="margin-left:0">idle · 0 / 0</span>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT -->
+    <div class="col-left" style="display:grid;gap:16px;min-width:0">
+      <div class="panel">
+        <div class="ph"><h3 id="card-title">Incoming investor</h3><span class="chip" id="claim-stage">Onboarding</span></div>
+        <div class="pb" id="claim-card"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><h3>Pipeline · fan-out / fan-in</h3></div>
+        <div class="pb"><div class="pipe" id="pipe"></div></div>
+      </div>
+    </div>
+
+    <!-- CENTER -->
+    <div class="col-mid" style="display:grid;gap:16px;min-width:0">
+      <div class="panel">
+        <div class="ph"><h3>Context graph · peer plans, instruments, rules, advisers</h3><span class="chip" id="graph-chip">idle</span></div>
+        <div class="graph-wrap" id="graph-host"></div>
+        <div class="legend">
+          <span><i class="n"></i>new plan / review</span><span><i class="v"></i>visited by agent</span><span><i class="h"></i>active hop</span><span><i class="f"></i>cautionary precedent · fund on watch</span>
+          <span style="margin-left:auto">edges: PLANNED_FOR · HOLDS · SATISFIES · ORIGINATED · APPROVED_BY · SIMILAR_TO</span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph"><h3>Run trace</h3><span class="chip mono" id="trace-count">0 events</span></div>
+        <div class="trace" id="trace"><div class="empty">Press <b>Run agents</b> to start the orchestrator.</div></div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="col-right panel" id="file"></div>
+  </div>
+  <p class="foot">Simulated replay of the pipeline in <code class="mono">run_plan.py</code> — tool calls, arguments and outputs mirror what the Python project in the Code tab produces. Stage durations are representative model latencies; the wall-clock figure is what <code class="mono">asyncio.gather</code> buys over running the specialists one after another. Synthetic investor, fictional fund houses; return and inflation assumptions are illustrative, not advice.</p>
+</section>
+
+<!-- ============================ ARCHITECTURE ============================ -->
+<section id="view-arch" class="view" hidden>
+  <div class="panel">
+    <div class="ph"><h3>Deterministic pipeline · parallel specialists · adviser-gated proposals · monitoring loop</h3></div>
+    <div class="arch">
+      <svg viewBox="0 0 1000 700" role="img" aria-label="Architecture diagram">
+        <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5 0 10z" fill="var(--ink2)"/></marker></defs>
+        <!-- investor -->
+        <rect class="box" x="20" y="30" width="140" height="64"/><text x="90" y="55" text-anchor="middle" font-weight="600">Investor</text><text class="t2" x="90" y="73" text-anchor="middle">KYC · ledger · goals</text><text class="t2" x="90" y="86" text-anchor="middle">risk questionnaire</text>
+        <!-- Stage 1 -->
+        <text class="t2" x="340" y="18" text-anchor="middle">STAGE 1 · sequential</text>
+        <rect class="box orch" x="220" y="30" width="240" height="64"/>
+        <text x="340" y="55" text-anchor="middle" font-weight="600">Profile &amp; Risk Analyst</text>
+        <text class="t2" x="340" y="73" text-anchor="middle">gpt-5-nano · InvestorProfile</text>
+        <text class="t2" x="340" y="86" text-anchor="middle">risk = min(stated, observed)</text>
+        <path class="ar" d="M160 62 H218"/>
+        <!-- fan-out -->
+        <path class="ar" d="M340 94 V120"/>
+        <rect class="box" x="240" y="120" width="200" height="30" style="fill:var(--surface2)"/>
+        <text class="t2" x="340" y="140" text-anchor="middle" font-weight="600">asyncio.gather(  …  )</text>
+        <text class="t2" x="340" y="170" text-anchor="middle">STAGE 2 · three independent Runner.run() calls · wall clock = slowest lane</text>
+        <path class="ar" d="M260 150 C260 172 130 168 130 190"/>
+        <path class="ar" d="M340 150 V190"/>
+        <path class="ar" d="M420 150 C420 172 550 168 550 190"/>
+        <!-- lanes -->
+        <rect class="box" x="40" y="192" width="180" height="96"/>
+        <text x="130" y="214" text-anchor="middle" font-weight="600">Goal Planner</text>
+        <text class="t2" x="130" y="232" text-anchor="middle">reasoning model · ~16s</text>
+        <text class="t2" x="130" y="250" text-anchor="middle">compute_goal_corpus</text>
+        <text class="t2" x="130" y="264" text-anchor="middle">inflation · FV · step-up SIP</text>
+        <rect class="box" x="250" y="192" width="180" height="96"/>
+        <text x="340" y="214" text-anchor="middle" font-weight="600">Allocation Strategist</text>
+        <text class="t2" x="340" y="232" text-anchor="middle">reasoning model · ~16s</text>
+        <text class="t2" x="340" y="250" text-anchor="middle">graph_find_peer_plans</text>
+        <text class="t2" x="340" y="264" text-anchor="middle">graph_traverse · record_allocation</text>
+        <rect class="box" x="460" y="192" width="180" height="96"/>
+        <text x="550" y="214" text-anchor="middle" font-weight="600">Suitability &amp; Rules</text>
+        <text class="t2" x="550" y="232" text-anchor="middle">gpt-5-nano · ~8s</text>
+        <text class="t2" x="550" y="250" text-anchor="middle">check_tax_regime · 80C headroom</text>
+        <text class="t2" x="550" y="264" text-anchor="middle">check_eligibility (REIT · direct eq · AIF)</text>
+        <!-- context graph -->
+        <rect class="box graphdb" x="780" y="150" width="200" height="150"/>
+        <text x="880" y="176" text-anchor="middle" font-weight="600">Context Graph</text>
+        <text class="t2" x="880" y="196" text-anchor="middle">Plans · Investors · Goals</text>
+        <text class="t2" x="880" y="211" text-anchor="middle">Instruments · Rules · Advisers</text>
+        <text class="t2" x="880" y="226" text-anchor="middle">Outcomes · Reviews · reasoning</text>
+        <text class="t2" x="880" y="251" text-anchor="middle">peer-plan ranking · BFS depth-2</text>
+        <text class="t2" x="880" y="266" text-anchor="middle">fund-quality history</text>
+        <text class="t2" x="880" y="288" text-anchor="middle">Neo4j / Neptune in prod</text>
+        <path class="ar g" d="M430 240 C560 240 600 300 778 230"/>
+        <path class="ar g" d="M640 225 H778"/>
+        <!-- fan-in -->
+        <path class="ar" d="M130 288 C130 312 260 308 260 330"/>
+        <path class="ar" d="M340 288 V330"/>
+        <path class="ar" d="M550 288 C550 312 420 308 420 330"/>
+        <text class="t2" x="340" y="323" text-anchor="middle">STAGE 3 · fan-in</text>
+        <rect class="box" x="240" y="330" width="200" height="44" style="fill:var(--surface2)"/>
+        <text x="340" y="349" text-anchor="middle" font-weight="600">fund_plan()</text>
+        <text class="t2" x="340" y="365" text-anchor="middle">priority waterfall · SIP ≤ 90% surplus · plain Python</text>
+        <!-- Stage 4 -->
+        <path class="ar" d="M340 374 V400"/>
+        <text class="t2" x="340" y="394" text-anchor="middle">STAGE 4</text>
+        <rect class="box orch" x="220" y="402" width="240" height="64"/>
+        <text x="340" y="426" text-anchor="middle" font-weight="600">Instrument Selector</text>
+        <text class="t2" x="340" y="444" text-anchor="middle">graph_instruments · graph_fund_quality</text>
+        <text class="t2" x="340" y="458" text-anchor="middle">record_shortlist (reason · peers · rules)</text>
+        <path class="ar g" d="M460 434 C620 434 700 320 778 290" style="stroke-dasharray:none"/>
+        <!-- Stage 5 -->
+        <path class="ar" d="M340 466 V492"/>
+        <text class="t2" x="340" y="486" text-anchor="middle">STAGE 5</text>
+        <rect class="box orch" x="220" y="494" width="240" height="64"/>
+        <text x="340" y="518" text-anchor="middle" font-weight="600">Plan Composer</text>
+        <text class="t2" x="340" y="536" text-anchor="middle">propose_plan()</text>
+        <text class="t2" x="340" y="550" text-anchor="middle">@function_tool(needs_approval=rule)</text>
+        <rect class="box human" x="20" y="496" width="160" height="60"/>
+        <text x="100" y="520" text-anchor="middle" font-weight="600">Adviser (SEBI RIA)</text>
+        <text class="t2" x="100" y="539" text-anchor="middle">approve / return with notes</text>
+        <path class="ar h" d="M218 526 H182"/>
+        <text class="t2" x="100" y="578" text-anchor="middle">new plan · SIP change ≥ ₹10k/mo</text>
+        <text class="t2" x="100" y="592" text-anchor="middle">any rebalance · any waiver</text>
+        <text class="t2" x="100" y="606" text-anchor="middle">interruptions → to_state() → approve()</text>
+        <rect class="box" x="520" y="496" width="200" height="60"/>
+        <text x="620" y="520" text-anchor="middle" font-weight="600">Booked plan</text>
+        <text class="t2" x="620" y="539" text-anchor="middle">SIP mandates · lump sums · glide dates</text>
+        <path class="ar" d="M460 526 H518"/>
+        <path class="ar g" d="M720 526 C790 526 840 420 870 302" style="stroke-dasharray:3 3"/>
+        <text class="t2" x="820" y="470" text-anchor="middle">plan + reasoning + approver</text>
+        <text class="t2" x="820" y="484" text-anchor="middle">written back as new precedent</text>
+        <!-- monitoring loop -->
+        <rect class="box loop" x="20" y="630" width="960" height="56"/>
+        <text x="40" y="652" font-weight="600">Monitoring loop · monitor.py (scheduled)</text>
+        <text class="t2" x="40" y="670">Portfolio Monitor → gather(Drift Analyst ‖ Goal Tracker ‖ Fund Quality Reviewer) → triage() → Review Proposer → propose_review(needs_approval) → adviser → graph</text>
+        <text class="t2" x="960" y="652" text-anchor="end">triggers: SIP miss · drift beyond band · goal slippage · life event · fund-quality change</text>
+        <path class="ar l" d="M620 556 V628"/>
+      </svg>
+    </div>
+    <div class="notes">
+      <div class="note"><h4>Why Python orders the stages, not an LLM</h4><p>Suitability before selection and selection before proposal is a regulatory sequence, not a judgement call. A deterministic pipeline enforces it on every run; <code>Agent.as_tool()</code> hand-offs are reserved for places where the <em>route</em> legitimately varies.</p></div>
+      <div class="note"><h4>Why specialists, not one agent</h4><p>Goal arithmetic, allocation precedent and rule checking read different data and fail in different ways. Each specialist gets 2–4 tools and returns a typed Pydantic contract, so the Goal Planner can be replayed over 500 profiles and evaluated alone.</p></div>
+      <div class="note"><h4>Why the context graph</h4><p>Every booked plan is written back with its reasoning, the peers it was benchmarked against, the rules it satisfied and the adviser who signed it. Rules such as the 40% equity cap on 3–5 year goals carry an <code>ORIGINATED</code> edge to the slipped plan that taught them, so a recommendation can cite its own provenance.</p></div>
+      <div class="note"><h4>Human-in-the-loop by rule</h4><p><code>needs_approval</code> is a callable over the shared <code>PlanContext</code> and the tool arguments. A new plan, any rebalance, a SIP change of ₹10k/month or more, or any rule waiver pauses the run with <code>result.interruptions</code>; <code>RunState</code> is serialisable so the adviser can act hours later.</p></div>
+      <div class="note"><h4>Monitoring is the same shape</h4><p>Signals (SIP ledger, NAVs, HR events, fund research) feed a second fan-out; a plain-Python <code>triage()</code> scores severity; the Review Proposer may only <em>propose</em>. Nothing changes in the client's portfolio without the adviser gate.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ CODE ============================ -->
+<section id="view-code" class="view" hidden>
+  <div class="panel">
+    <div class="ph"><h3>Runnable project · python run_plan.py INV-2026-7731</h3><span class="chip mono">pip install openai-agents</span></div>
+    <div class="files" id="files"></div>
+    <pre class="code"><code id="code" class="language-python"></code></pre>
+  </div>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+/* Source files (injected at build time from the Python project) */
+const FILES = {
+"run_plan.py": "\"\"\"\nEntry point - deterministic fan-out / fan-in pipeline for a goal-funded plan.\n\n    export OPENAI_API_KEY=sk-...\n    pip install -r requirements.txt\n    python run_plan.py INV-2026-7731            # build a new plan\n    python monitor.py PLN-2026-2201 2027-12-05  # run the monitoring loop\n\nStage order is a business rule (suitability before selection, selection\nbefore proposal), so Python enforces it; the LLMs do the work inside each\nstage.  Stage 2 runs three specialists concurrently with asyncio.gather.\n\"\"\"\nimport asyncio, json, sys\nfrom agents import Runner, trace\nfrom agents_def import (profile_analyst, goal_planner, allocation_strategist,\n                        suitability_engine, instrument_selector, plan_composer)\nfrom context import PlanContext\nfrom context_graph import build_demo_graph\nfrom rules import fund_plan\n\n\nasync def build_plan(investor_id: str) -> dict:\n    ctx = PlanContext(investor_id=investor_id, graph=build_demo_graph())\n\n    with trace(f\"goal-plan {investor_id}\"):\n        # ---- Stage 1: profile + risk reconciliation (sequential) ---------\n        profile = await Runner.run(profile_analyst,\n                                   \"Build the InvestorProfile from KYC, ledger and questionnaire.\",\n                                   context=ctx)\n        ctx.profile = profile.final_output\n\n        # ---- Stage 2: fan-out — three independent specialists -----------\n        facts = ctx.profile.model_dump_json()\n        goals, alloc, suit = await asyncio.gather(\n            Runner.run(goal_planner, facts, context=ctx),\n            Runner.run(allocation_strategist, facts, context=ctx),\n            Runner.run(suitability_engine, facts, context=ctx),\n        )\n        ctx.goals, ctx.allocation, ctx.suitability = (\n            goals.final_output, alloc.final_output, suit.final_output)\n\n        # ---- Stage 3: fan-in — plain Python, no LLM ----------------------\n        ctx.funding = fund_plan(ctx)          # waterfall, ceilings, redirects\n\n        # ---- Stage 4: concrete instruments from the context graph --------\n        shortlist = await Runner.run(instrument_selector, ctx.to_json(), context=ctx)\n        ctx.shortlist = shortlist.final_output\n\n        # ---- Stage 5: proposal — the only agent allowed to book anything -\n        result = await Runner.run(plan_composer, ctx.to_json(), context=ctx)\n\n        # needs_approval paused the run?  Serialise and hand to the adviser.\n        if result.interruptions:\n            state = result.to_state()\n            ctx.audit(\"PAUSED\", \"awaiting adviser sign-off on propose_plan\")\n            return {\"status\": \"AWAITING_ADVISER\", \"state\": state.to_json(),\n                    \"proposal\": ctx.proposal.model_dump()}\n\n        ctx.graph.write_back(ctx)             # new precedent, with reasoning\n        return {\"status\": \"BOOKED\", \"plan\": result.final_output.model_dump()}\n\n\nasync def resume(state_json: str, approve: bool, note: str = \"\") -> dict:\n    \"\"\"Called by the adviser console hours later.\"\"\"\n    from agents import RunState\n    ctx = PlanContext.from_state(state_json)\n    state = RunState.from_json(plan_composer, state_json)\n    for item in state.interruptions:\n        state.approve(item) if approve else state.reject(item, rejection_message=note)\n    result = await Runner.run(plan_composer, state, context=ctx)\n    if approve:\n        ctx.graph.write_back(ctx, approver=note or \"adviser\")\n    return result.final_output.model_dump()\n\n\nif __name__ == \"__main__\":\n    out = asyncio.run(build_plan(sys.argv[1] if len(sys.argv) > 1 else \"INV-2026-7731\"))\n    print(json.dumps(out, indent=2, default=str))\n",
+"agents_def.py": "\"\"\"\nAgent definitions.\n\n    Profile & Risk Analyst\n        │  InvestorProfile\n        ▼\n   ┌────────────── asyncio.gather ──────────────┐\n   Goal Planner   Allocation Strategist   Suitability & Rules\n   GoalPlan       AllocationPlan          SuitabilityResult\n   └────────────────────┬───────────────────────┘\n                        ▼  fund_plan()  (plain Python)\n                 Instrument Selector      → Shortlist\n                        ▼\n                 Plan Composer            → propose_plan(needs_approval)\n\"\"\"\nfrom agents import Agent, ModelSettings\nfrom schemas import (InvestorProfile, GoalPlan, AllocationPlan, SuitabilityResult,\n                     Shortlist, PlanProposal)\nimport tools as T\n\nprofile_analyst = Agent[PlanContext](\n    name=\"Profile & Risk Analyst\",\n    model=\"gpt-5-nano\",\n    instructions=\"\"\"Assemble the InvestorProfile. Pull KYC and ledger facts, the\nvalidated risk questionnaire and 36 months of observed behaviour. Effective\nrisk is the LOWER of stated and observed (rule R-RISK-03) — explain why.\"\"\",\n    tools=[T.fetch_kyc_and_profile, T.fetch_risk_questionnaire,\n           T.observe_behaviour, T.record_profile],\n    output_type=InvestorProfile,\n)\n\ngoal_planner = Agent[PlanContext](\n    name=\"Goal Planner\",\n    model=\"o4-mini\",\n    instructions=\"\"\"For each goal compute: target corpus (today's cost grown at the\ngoal-specific inflation), horizon in months, value of existing assets earmarked\nto it, the gap, and the SIP that closes the gap. Prefer a 10% annual step-up\nwhen a flat SIP would exceed 60% of surplus. Use compute_goal_corpus only —\nnever do the arithmetic in prose.\"\"\",\n    tools=[T.compute_goal_corpus, T.record_goal_plan],\n    output_type=GoalPlan,\n)\n\nallocation_strategist = Agent[PlanContext](\n    name=\"Allocation Strategist\",\n    model=\"o4-mini\",\n    instructions=\"\"\"Set a strategic asset allocation per goal from the horizon x\neffective-risk matrix, then benchmark it against peer plans in the context\ngraph: who looked like this investor, what did they hold, how did it turn out.\nCite the peer plan ids you relied on and any rule whose ORIGINATED edge you\ntraversed.\"\"\",\n    tools=[T.graph_find_peer_plans, T.graph_traverse, T.record_allocation],\n    output_type=AllocationPlan,\n)\n\nsuitability_engine = Agent[PlanContext](\n    name=\"Suitability & Rules\",\n    model=\"gpt-5-nano\",\n    instructions=\"\"\"Run the suitability checks: tax regime and 80C / 80CCD(1B)\nheadroom, product eligibility (REIT/InvIT, direct equity, AIF), SIP ceiling,\nhorizon-equity cap. Return every rule with PASS / FAIL / NA and the fact that\ndecided it.\"\"\",\n    tools=[T.check_tax_regime, T.check_eligibility, T.record_suitability],\n    output_type=SuitabilityResult,\n)\n\ninstrument_selector = Agent[PlanContext](\n    name=\"Instrument Selector\",\n    model=\"o4-mini\",\n    instructions=\"\"\"Turn each goal's allocation into concrete instruments from the\ncontext graph: index funds by tracking error and expense ratio, active funds\nby rolling alpha and manager tenure, debt by credit quality and duration, ELSS\nonly to fill 80C headroom, NPS for 80CCD(1B), gold via SGB if a tranche is\nopen else gold ETF, REIT only if eligible. For every pick record: reasoning,\nthe peer plans that hold it and how they fared, the rules it satisfies.\"\"\",\n    tools=[T.graph_instruments, T.graph_fund_quality, T.record_shortlist],\n    output_type=Shortlist,\n)\n\nplan_composer = Agent[PlanContext](\n    name=\"Plan Composer\",\n    model=\"gpt-5-nano\",\n    model_settings=ModelSettings(tool_choice=\"required\"),\n    instructions=\"\"\"Compose the plan and call propose_plan exactly once. Name the\nadviser of record. If the run resumes with a rejection, read the adviser note\nand draft v2 with the requested changes.\"\"\",\n    tools=[T.propose_plan],\n    output_type=PlanProposal,\n)\n",
+"tools.py": "\"\"\"\nFunction tools exposed to the specialists.  Decorated with @function_tool so\nthe SDK derives the JSON schema from signature + docstring.  Every tool reads\nor writes the shared PlanContext through RunContextWrapper.\n\"\"\"\nfrom agents import function_tool, RunContextWrapper\nfrom context import PlanContext\nfrom rules import (ruleset, sip_for_target, future_value, stepup_sip_for_target,\n                   effective_risk, needs_adviser_signoff)\nimport data\n\n\n@function_tool\nasync def fetch_kyc_and_profile(ctx: RunContextWrapper[PlanContext]) -> dict:\n    \"\"\"KYC, income, dependants, assets, liabilities, monthly surplus, tax regime.\"\"\"\n    return data.INVESTORS[ctx.context.investor_id]\n\n\n@function_tool\nasync def fetch_risk_questionnaire(ctx: RunContextWrapper[PlanContext]) -> dict:\n    \"\"\"Validated 12-item questionnaire score (0-100) and band.\"\"\"\n    return data.QUESTIONNAIRE[ctx.context.investor_id]\n\n\n@function_tool\nasync def observe_behaviour(ctx: RunContextWrapper[PlanContext], months: int = 36) -> dict:\n    \"\"\"Behavioural risk from the transaction ledger: SIP pauses, redemptions in drawdowns.\"\"\"\n    return data.behaviour_from_ledger(ctx.context.investor_id, months)\n\n\n@function_tool\nasync def record_profile(ctx: RunContextWrapper[PlanContext], risk_stated: str,\n                         risk_observed: str, reason: str) -> str:\n    \"\"\"Persist the profile; effective risk is min(stated, observed) per R-RISK-03.\"\"\"\n    ctx.context.risk_effective = effective_risk(risk_stated, risk_observed)\n    ctx.context.audit(\"PROFILE\", reason)\n    return ctx.context.risk_effective\n\n\n@function_tool\nasync def compute_goal_corpus(ctx: RunContextWrapper[PlanContext], goal: str, cost_today: float,\n                              inflation: float, years: float, existing: float = 0.0,\n                              existing_return: float = 0.0, blended_return: float = 0.10,\n                              step_up: float = 0.0) -> dict:\n    \"\"\"Target corpus, FV of earmarked assets, gap and the monthly SIP that closes it.\"\"\"\n    target = future_value(cost_today, inflation, years)\n    seed = future_value(existing, existing_return, years)\n    gap = max(target - seed, 0)\n    sip = (stepup_sip_for_target(gap, blended_return, years, step_up) if step_up\n           else sip_for_target(gap, blended_return, int(years * 12)))\n    return {\"goal\": goal, \"target\": round(target), \"seed_fv\": round(seed),\n            \"gap\": round(gap), \"sip\": round(sip, -2), \"step_up\": step_up}\n\n\n@function_tool\nasync def graph_find_peer_plans(ctx: RunContextWrapper[PlanContext], age_band: str,\n                                income_band: str, goals: list[str], risk: str, k: int = 4) -> list[dict]:\n    \"\"\"Ranked peer plans with recorded outcomes (ON_TRACK, AHEAD, SLIPPED, ABANDONED, REWORKED).\"\"\"\n    return ctx.context.graph.find_peer_plans(age_band, income_band, goals, risk, k)\n\n\n@function_tool\nasync def graph_traverse(ctx: RunContextWrapper[PlanContext], node_id: str, max_depth: int = 2) -> dict:\n    \"\"\"BFS from a node: HOLDS, SATISFIES, ORIGINATED, APPROVED_BY, SIMILAR_TO edges with reasoning.\"\"\"\n    return ctx.context.graph.traverse(node_id, max_depth)\n\n\n@function_tool\nasync def check_tax_regime(ctx: RunContextWrapper[PlanContext]) -> dict:\n    \"\"\"Regime, 80C already consumed (EPF, insurance), 80C and 80CCD(1B) headroom.\"\"\"\n    inv = data.INVESTORS[ctx.context.investor_id]\n    used = inv[\"epf_employee_annual\"] + inv.get(\"insurance_80c\", 0)\n    return {\"regime\": inv[\"tax_regime\"], \"80C_used\": used,\n            \"80C_headroom\": max(150_000 - used, 0) if inv[\"tax_regime\"] == \"OLD\" else 0,\n            \"80CCD1B_headroom\": 50_000 if inv[\"tax_regime\"] == \"OLD\" else 0}\n\n\n@function_tool\nasync def check_eligibility(ctx: RunContextWrapper[PlanContext], product: str) -> dict:\n    \"\"\"Eligibility for REIT/InvIT, direct equity sleeve, AIF/alternatives.\"\"\"\n    return ruleset.eligibility(product, ctx.context)\n\n\n@function_tool\nasync def graph_instruments(ctx: RunContextWrapper[PlanContext], category: str,\n                            filters: dict | None = None) -> list[dict]:\n    \"\"\"Instrument nodes in a category with quality metrics and the peer plans holding them.\"\"\"\n    return ctx.context.graph.instruments(category, filters or {})\n\n\n@function_tool\nasync def graph_fund_quality(ctx: RunContextWrapper[PlanContext], fund_id: str) -> dict:\n    \"\"\"Rolling alpha, tracking error, manager tenure, rating history, open events.\"\"\"\n    return ctx.context.graph.fund_quality(fund_id)\n\n\n@function_tool\nasync def record_shortlist(ctx: RunContextWrapper[PlanContext], picks: list[dict]) -> int:\n    \"\"\"Each pick: goal, instrument_id, weight, reasoning, peers[], rules[].\"\"\"\n    ctx.context.shortlist_raw = picks\n    return len(picks)\n\n\n@function_tool(needs_approval=needs_adviser_signoff)\nasync def propose_plan(ctx: RunContextWrapper[PlanContext], plan_id: str, monthly_sip: int,\n                       lump_sum: int, instruments: int, rules_satisfied: list[str],\n                       rules_waived: list[str], adviser: str, summary: str) -> dict:\n    \"\"\"Book the plan. Pauses the run when needs_adviser_signoff(...) is True.\"\"\"\n    ctx.context.audit(\"BOOKED\", summary)\n    return {\"status\": \"BOOKED\", \"plan_id\": plan_id, \"monthly_sip\": monthly_sip,\n            \"lump_sum\": lump_sum, \"instruments\": instruments, \"approved_by\": adviser}\n",
+"rules.py": "\"\"\"\nDeterministic finance + rule layer.  No LLM in this file.\n\"\"\"\nfrom dataclasses import dataclass\n\nRISK_ORDER = [\"CONSERVATIVE\", \"MODERATE\", \"MOD_AGG\", \"AGGRESSIVE\"]\n\ndef effective_risk(stated: str, observed: str) -> str:\n    \"\"\"R-RISK-03: never plan above what the investor has actually tolerated.\"\"\"\n    return min(stated, observed, key=RISK_ORDER.index)\n\ndef future_value(pv: float, r: float, years: float) -> float:\n    return pv * (1 + r) ** years\n\ndef sip_for_target(target: float, r_annual: float, months: int) -> float:\n    r = r_annual / 12\n    factor = ((1 + r) ** months - 1) / r * (1 + r)      # SIP at start of month\n    return target / factor\n\ndef stepup_sip_for_target(target: float, r: float, years: int, step: float) -> float:\n    def fv(sip):\n        tot = 0.0\n        for y in range(years):\n            block = sip * (1 + step) ** y * (((1 + r / 12) ** 12 - 1) / (r / 12)) * (1 + r / 12)\n            tot += block * (1 + r) ** (years - 1 - y)\n        return tot\n    lo, hi = 0.0, 1e6\n    for _ in range(80):\n        mid = (lo + hi) / 2\n        lo, hi = (mid, hi) if fv(mid) < target else (lo, mid)\n    return hi\n\n# Horizon x risk -> (equity, debt, gold, reit) in %\nSAA = {\n    (\"<1y\",  \"ANY\"):      (0, 100, 0, 0),\n    (\"3-5y\", \"MODERATE\"): (40, 60, 0, 0),\n    (\"3-5y\", \"MOD_AGG\"):  (40, 60, 0, 0),     # capped by R-HZN-01 regardless of risk\n    (\"10-15y\", \"MODERATE\"): (65, 25, 10, 0),\n    (\"20y+\", \"MODERATE\"): (65, 25, 5, 5),\n    (\"20y+\", \"MOD_AGG\"):  (75, 15, 5, 5),\n}\n\n@dataclass\nclass Rule:\n    id: str; text: str; origin: str | None = None\n\nRULES = [\n    Rule(\"R-RISK-03\", \"effective risk = min(stated, observed)\"),\n    Rule(\"R-HZN-01\",  \"equity ≤ 40% for goals 3–5y; glide to 0% from T-2y\", origin=\"PLN-2024-0931\"),\n    Rule(\"R-SIP-01\",  \"total SIP ≤ 90% of monthly surplus; prefer step-up\", origin=\"PLN-2022-0188\"),\n    Rule(\"R-TAX-01\",  \"ELSS only under old regime and only up to 80C headroom\", origin=\"PLN-2025-1204\"),\n    Rule(\"R-TAX-02\",  \"NPS Tier-I ₹50k/yr for 80CCD(1B) when horizon ≥ 15y\"),\n    Rule(\"R-ELIG-01\", \"REIT/InvIT: horizon ≥ 7y and risk ≥ MODERATE, cap 5%\"),\n    Rule(\"R-ELIG-02\", \"direct-equity sleeve: risk ≥ MOD_AGG and income ≥ ₹25L\"),\n    Rule(\"R-ELIG-03\", \"AIF / alternatives: min ticket ₹1 Cr\"),\n    Rule(\"R-GOLD-01\", \"SGB if a primary tranche is open, else gold ETF\"),\n    Rule(\"R-EMG-01\",  \"emergency fund = 6× essential expenses, before any other goal\"),\n    Rule(\"R-DRIFT-01\", \"rebalance when a sleeve leaves its ±7pp band\"),\n    Rule(\"R-FQ-02\",   \"manager change → WATCH for 2 quarters, no new money\"),\n]\n\nclass ruleset:\n    @staticmethod\n    def eligibility(product: str, ctx) -> dict:\n        p, risk, inc = product.upper(), ctx.risk_effective, ctx.profile.income_annual\n        if p in (\"REIT\", \"INVIT\"):\n            ok = RISK_ORDER.index(risk) >= 1 and ctx.longest_horizon_years >= 7\n            return {\"product\": p, \"eligible\": ok, \"cap_pct\": 5, \"rule\": \"R-ELIG-01\"}\n        if p == \"DIRECT_EQUITY\":\n            ok = RISK_ORDER.index(risk) >= 2 and inc >= 2_500_000\n            return {\"product\": p, \"eligible\": ok, \"rule\": \"R-ELIG-02\",\n                    \"reason\": None if ok else f\"risk_effective={risk} (observed behaviour)\"}\n        if p in (\"AIF\", \"ALTERNATIVES\"):\n            return {\"product\": p, \"eligible\": ctx.profile.investable_lumpsum >= 1e7, \"rule\": \"R-ELIG-03\"}\n        return {\"product\": p, \"eligible\": False, \"rule\": None}\n\ndef fund_plan(ctx) -> dict:\n    \"\"\"Stage-3 fan-in: priority waterfall over the surplus. Pure arithmetic.\"\"\"\n    order = [\"emergency\", \"house\", \"education\", \"retirement\"]\n    surplus, ceiling = ctx.profile.monthly_surplus, 0.90 * ctx.profile.monthly_surplus\n    sips, total = {}, 0\n    for g in order:\n        want = ctx.goals.sip_for(g)\n        take = min(want, max(ceiling - total, 0))\n        sips[g], total = take, total + take\n    redirects = [{\"from\": \"emergency\", \"to\": \"house\", \"amount\": sips[\"emergency\"],\n                  \"when\": ctx.goals.months_to_fill(\"emergency\")},\n                 {\"from\": \"car_emi\", \"to\": \"retirement\", \"amount\": ctx.profile.emi_ending,\n                  \"when\": ctx.profile.emi_months_left}]\n    return {\"sips\": sips, \"total\": total, \"buffer\": surplus - total,\n            \"ceiling_ok\": total <= ceiling, \"redirects\": redirects}\n\ndef needs_adviser_signoff(ctx, args: dict) -> bool:\n    \"\"\"Gate for propose_plan / propose_review.\"\"\"\n    new_plan = ctx.context.plan_version == 1\n    big_sip_change = abs(args.get(\"sip_delta\", args.get(\"monthly_sip\", 0))) >= 10_000\n    rebalance = bool(args.get(\"rebalances\"))\n    waiver = bool(args.get(\"rules_waived\"))\n    return new_plan or big_sip_change or rebalance or waiver\n",
+"context_graph.py": "\"\"\"\nContext Graph: institutional memory of plans, instruments, rules and outcomes.\n\nNodes : Investor, Plan, Goal, Instrument, Rule, Adviser, Review, Signal\nEdges : PLANNED_FOR, HAS_GOAL, HOLDS(weight, reasoning), SATISFIES(rule, fact),\n        ORIGINATED(rule <- plan that taught it), APPROVED_BY(adviser, note),\n        SIMILAR_TO(score), REVIEWS, TRIGGERED_BY\n\nIn-memory networkx for the demo; the same queries run as Cypher / Gremlin.\n\"\"\"\nfrom collections import deque\nimport networkx as nx\nimport data\n\n\nclass ContextGraph:\n    def __init__(self):\n        self.g = nx.MultiDiGraph()\n\n    # ---- writes ---------------------------------------------------------\n    def add(self, nid, **attrs):\n        self.g.add_node(nid, **attrs)\n\n    def link(self, a, b, rel, **attrs):\n        self.g.add_edge(a, b, key=rel, rel=rel, **attrs)\n\n    def write_back(self, ctx, approver=\"R. Menon\"):\n        pid = ctx.proposal.plan_id\n        self.add(pid, type=\"Plan\", outcome=\"ACTIVE\", version=ctx.plan_version,\n                 monthly_sip=ctx.funding[\"total\"], as_of=ctx.as_of)\n        self.link(pid, ctx.investor_id, \"PLANNED_FOR\")\n        for pick in ctx.shortlist.picks:\n            self.link(pid, pick.instrument_id, \"HOLDS\", weight=pick.weight,\n                      goal=pick.goal, reasoning=pick.reasoning)\n        for r in ctx.suitability.passed:\n            self.link(pid, f\"RULE:{r.id}\", \"SATISFIES\", fact=r.fact)\n        for peer in ctx.allocation.peers_relied_on:\n            self.link(pid, peer, \"SIMILAR_TO\", score=ctx.allocation.peer_scores[peer])\n        self.link(pid, f\"ADV:{approver}\", \"APPROVED_BY\", note=ctx.adviser_note)\n\n    # ---- reads ----------------------------------------------------------\n    def find_peer_plans(self, age_band, income_band, goals, risk, k=4):\n        scored = []\n        for n, a in self.g.nodes(data=True):\n            if a.get(\"type\") != \"Plan\" or a.get(\"outcome\") == \"ACTIVE\":\n                continue\n            s = 0\n            s += 3 if a[\"age_band\"] == age_band else 0\n            s += 2 if a[\"income_band\"] == income_band else 0\n            s += 2 * len(set(a[\"goals\"]) & set(goals))\n            s += 2 if a[\"risk\"] == risk else 0\n            scored.append({\"plan\": n, \"relevance\": s, \"outcome\": a[\"outcome\"],\n                           \"summary\": a[\"summary\"]})\n        return sorted(scored, key=lambda x: -x[\"relevance\"])[:k]\n\n    def traverse(self, start, max_depth=2):\n        seen, out, q = {start}, [], deque([(start, 0)])\n        while q:\n            n, d = q.popleft()\n            if d == max_depth:\n                continue\n            for _, m, e in self.g.out_edges(n, data=True):\n                out.append({\"from\": n, \"rel\": e[\"rel\"], \"to\": m,\n                            **{k: v for k, v in e.items() if k != \"rel\"}})\n                if m not in seen:\n                    seen.add(m); q.append((m, d + 1))\n            for m, _, e in self.g.in_edges(n, data=True):      # ORIGINATED points at rules\n                if e[\"rel\"] in (\"ORIGINATED\", \"HOLDS\", \"REVIEWS\"):\n                    out.append({\"from\": m, \"rel\": e[\"rel\"], \"to\": n})\n                    if m not in seen:\n                        seen.add(m); q.append((m, d + 1))\n        return {\"start\": start, \"nodes\": len(seen), \"edges\": out}\n\n    def instruments(self, category, filters):\n        res = []\n        for n, a in self.g.nodes(data=True):\n            if a.get(\"type\") != \"Instrument\" or a.get(\"category\") != category:\n                continue\n            if all(a.get(k, 0) <= v if k.startswith(\"max_\") else a.get(k, 0) >= v\n                   for k, v in filters.items()):\n                holders = [(p, self.g.nodes[p][\"outcome\"]) for p, _, e in self.g.in_edges(n, data=True)\n                           if e[\"rel\"] == \"HOLDS\"]\n                res.append({\"id\": n, **a, \"held_by\": holders})\n        return res\n\n    def fund_quality(self, fund_id):\n        a = self.g.nodes[fund_id]\n        return {k: a.get(k) for k in (\"rolling_alpha_5y\", \"tracking_error\", \"expense_ratio\",\n                                      \"manager_tenure_y\", \"rating\", \"aum_cr\", \"open_events\")}\n\n\ndef build_demo_graph() -> ContextGraph:\n    cg = ContextGraph()\n    for nid, attrs in data.NODES.items():\n        cg.add(nid, **attrs)\n    for a, b, rel, attrs in data.EDGES:\n        cg.link(a, b, rel, **attrs)\n    return cg\n",
+"monitor.py": "\"\"\"\nMonitoring loop — same pipeline shape, run on a schedule per active plan.\n\nTriggers: SIP miss, drift beyond band, goal slippage, life event,\nfund-quality change.  The Review Proposer may only PROPOSE; propose_review is\ngated by the same needs_adviser_signoff rule as propose_plan.\n\"\"\"\nimport asyncio, sys\nfrom agents import Agent, Runner, function_tool, RunContextWrapper, trace\nfrom context import PlanContext\nfrom rules import needs_adviser_signoff\n\nSEVERITY = {\"SIP_MISS\": 2, \"DRIFT_BREACH\": 2, \"GOAL_SLIP\": 3, \"MANAGER_CHANGE\": 1,\n            \"LIFE_EVENT\": 1, \"ASSUMPTION_BREACH\": 2}\nREVIEW_THRESHOLD = 5\n\n\ndef triage(ctx: PlanContext) -> dict:\n    \"\"\"Stage-3 fan-in. Pure arithmetic over the three reports.\"\"\"\n    score = sum(SEVERITY[s.kind] for s in ctx.signals) \\\n          + sum(3 for g in ctx.tracking.goals if g.p_success_delta <= -0.10) \\\n          + sum(2 for d in ctx.drift.sleeves if d.breach)\n    return {\"score\": score, \"review_required\": score >= REVIEW_THRESHOLD,\n            \"drivers\": sorted({s.kind for s in ctx.signals})}\n\n\n@function_tool(needs_approval=needs_adviser_signoff)\nasync def propose_review(ctx: RunContextWrapper[PlanContext], review_id: str, actions: list[dict],\n                         sip_delta: int, rebalances: list[dict], rules: list[str],\n                         precedents: list[str], adviser: str, summary: str) -> dict:\n    \"\"\"Book the review. Any rebalance or SIP change ≥ ₹10k/mo pauses for the adviser.\"\"\"\n    ctx.context.audit(\"REVIEW_BOOKED\", summary)\n    return {\"status\": \"BOOKED\", \"review_id\": review_id, \"actions\": len(actions)}\n\n\nportfolio_monitor   = Agent[PlanContext](name=\"Portfolio Monitor\", model=\"gpt-5-nano\",\n    instructions=\"Ingest SIP ledger, NAV feed, HR/life events, fund research feed, macro indices. Record every signal with its evidence.\",\n    tools=[\"ingest_signals\", \"record_signals\"])\ndrift_analyst       = Agent[PlanContext](name=\"Drift Analyst\", model=\"gpt-5-nano\",\n    instructions=\"Compare each goal sleeve to its SAA band (R-DRIFT-01). Propose tax-aware rebalances (R-TAX-04: harvest within the ₹1.25L LTCG exemption).\",\n    tools=[\"compute_drift\", \"rebalance_proposal\"])\ngoal_tracker        = Agent[PlanContext](name=\"Goal Tracker\", model=\"o4-mini\",\n    instructions=\"Re-project every goal with current corpus, revised assumptions and new surplus. Report P(success) and its change since booking.\",\n    tools=[\"project_goal\"])\nfund_quality_review = Agent[PlanContext](name=\"Fund Quality Reviewer\", model=\"gpt-5-nano\",\n    instructions=\"Check open events on every held fund in the context graph; apply R-FQ-02; cite how peers handled the same event.\",\n    tools=[\"graph_fund_quality\", \"graph_find_precedents\"])\nreview_proposer     = Agent[PlanContext](name=\"Review Proposer\", model=\"gpt-5-nano\",\n    instructions=\"Compose one propose_review call from the three reports and the triage score. Every action cites a rule and a precedent.\",\n    tools=[propose_review])\n\n\nasync def monitor_plan(plan_id: str, as_of: str) -> dict:\n    ctx = PlanContext.load(plan_id, as_of=as_of)\n    with trace(f\"plan-review {plan_id} {as_of}\"):\n        sig = await Runner.run(portfolio_monitor, f\"as_of={as_of}\", context=ctx)\n        ctx.signals = sig.final_output.signals\n        drift, track, fq = await asyncio.gather(\n            Runner.run(drift_analyst, ctx.to_json(), context=ctx),\n            Runner.run(goal_tracker, ctx.to_json(), context=ctx),\n            Runner.run(fund_quality_review, ctx.to_json(), context=ctx))\n        ctx.drift, ctx.tracking, ctx.fund_quality = drift.final_output, track.final_output, fq.final_output\n        ctx.triage = triage(ctx)\n        if not ctx.triage[\"review_required\"]:\n            return {\"status\": \"NO_ACTION\", \"triage\": ctx.triage}\n        result = await Runner.run(review_proposer, ctx.to_json(), context=ctx)\n        if result.interruptions:\n            return {\"status\": \"AWAITING_ADVISER\", \"state\": result.to_state().to_json()}\n        ctx.graph.write_back_review(ctx)\n        return {\"status\": \"BOOKED\", \"review\": result.final_output.model_dump()}\n\n\nif __name__ == \"__main__\":\n    print(asyncio.run(monitor_plan(sys.argv[1], sys.argv[2])))\n",
+"data.py": "\"\"\"\nSynthetic data for the demo.  Fictional investor and fund houses.\n\nINV-2026-7731  Priya Raghavan, 34, Bengaluru — four goals, old tax regime,\n               stated risk MOD_AGG but paused SIPs in the 2025 drawdown.\n\"\"\"\nINVESTORS = {\n    \"INV-2026-7731\": {\n        \"name\": \"Priya Raghavan\", \"age\": 34, \"city\": \"Bengaluru\",\n        \"income_annual\": 3_200_000, \"take_home_monthly\": 200_000,\n        \"expenses_monthly\": 115_000, \"essential_monthly\": 85_000,\n        \"monthly_surplus\": 85_000, \"tax_regime\": \"OLD\",\n        \"dependants\": [{\"rel\": \"child\", \"age\": 6}, {\"rel\": \"mother\", \"age\": 63, \"partial\": True}],\n        \"assets\": {\"EPF\": 1_420_000, \"PPF\": 410_000, \"equity_mf\": 680_000, \"savings\": 350_000},\n        \"liabilities\": {\"car_loan\": {\"outstanding\": 320_000, \"emi\": 19_500, \"months_left\": 18}},\n        \"epf_employee_annual\": 86_400, \"epf_monthly_total\": 14_400,\n        \"goals\": [\n            {\"id\": \"emergency\",  \"label\": \"Emergency fund\",       \"when\": \"now\",  \"basis\": \"6 × essential\"},\n            {\"id\": \"house\",      \"label\": \"House down-payment\",   \"years\": 5,     \"cost_today\": 1_950_000, \"inflation\": 0.05},\n            {\"id\": \"education\",  \"label\": \"Child's education\",    \"years\": 12,    \"cost_today\": 2_500_000, \"inflation\": 0.08},\n            {\"id\": \"retirement\", \"label\": \"Retire at 58\",         \"years\": 24,    \"expense_today_m\": 70_000, \"inflation\": 0.06, \"multiple\": 25},\n        ],\n    },\n}\n\nQUESTIONNAIRE = {\"INV-2026-7731\": {\"score\": 68, \"band\": \"MOD_AGG\", \"items\": 12, \"validated\": \"2026-09-30\"}}\n\ndef behaviour_from_ledger(investor_id, months):\n    return {\"score\": 54, \"band\": \"MODERATE\",\n            \"evidence\": [\"SIPs paused Mar–Apr 2025 during −14% drawdown\",\n                         \"₹1.2L redeemed within 3% of the trough\",\n                         \"resumed after 2 months at a lower amount\"]}\n\n# ---- context graph seed -------------------------------------------------------\nNODES = {\n    \"INV-2026-7731\": dict(type=\"Investor\"),\n    \"PLN-2021-0077\": dict(type=\"Plan\", outcome=\"AHEAD\", age_band=\"30-35\", income_band=\"25-40L\", risk=\"MODERATE\",\n                          goals=[\"retirement\", \"education\"], summary=\"10% step-up, index core + NPS active choice; 1.3y ahead\"),\n    \"PLN-2023-0412\": dict(type=\"Plan\", outcome=\"ON_TRACK\", age_band=\"30-35\", income_band=\"25-40L\", risk=\"MODERATE\",\n                          goals=[\"house\", \"education\", \"retirement\"], summary=\"house 5y at 40/60 with glide; on track\"),\n    \"PLN-2024-0931\": dict(type=\"Plan\", outcome=\"SLIPPED\", age_band=\"30-35\", income_band=\"25-40L\", risk=\"MOD_AGG\",\n                          goals=[\"house\"], summary=\"house 4y funded 65% equity; sold −18% in 2025; goal slipped 2y\"),\n    \"PLN-2022-0188\": dict(type=\"Plan\", outcome=\"ABANDONED\", age_band=\"35-40\", income_band=\"25-40L\", risk=\"MODERATE\",\n                          goals=[\"retirement\"], summary=\"flat SIP at 100% of surplus; abandoned after 7 months\"),\n    \"PLN-2025-1204\": dict(type=\"Plan\", outcome=\"REWORKED\", age_band=\"30-35\", income_band=\"25-40L\", risk=\"MODERATE\",\n                          goals=[\"retirement\", \"education\"], summary=\"ELSS recommended under NEW regime; no 80C benefit; reworked\"),\n    \"FND:Arbor Nifty 50 Index\":    dict(type=\"Instrument\", category=\"large-cap index\", expense_ratio=0.10, tracking_error=0.07, aum_cr=18_400, rating=None),\n    \"FND:Arbor Midcap 150 Index\":  dict(type=\"Instrument\", category=\"midcap index\",    expense_ratio=0.20, tracking_error=0.12, aum_cr=4_100),\n    \"FND:Kestrel Flexi Cap\":       dict(type=\"Instrument\", category=\"flexi-cap active\", expense_ratio=0.68, rolling_alpha_5y=1.8, manager_tenure_y=6, rating=4, aum_cr=22_900, open_events=[]),\n    \"FND:Kestrel Tax Saver\":       dict(type=\"Instrument\", category=\"ELSS\", expense_ratio=0.72, rolling_alpha_5y=1.1, lock_in_y=3),\n    \"FND:Sarovar Short Duration\":  dict(type=\"Instrument\", category=\"debt short-duration\", aaa_sov_pct=92, mod_duration_y=2.1, ytm=7.3),\n    \"FND:Arbor Liquid\":            dict(type=\"Instrument\", category=\"liquid\", aaa_sov_pct=100, mod_duration_y=0.1),\n    \"ETF:Sarovar Gold ETF\":        dict(type=\"Instrument\", category=\"gold\", expense_ratio=0.50, tracking_error=0.3),\n    \"REIT:Meridian Office REIT\":   dict(type=\"Instrument\", category=\"REIT\", dist_yield=6.4, occupancy=0.89),\n    \"NPS:Tier-I active E75\":       dict(type=\"Instrument\", category=\"NPS\", section=\"80CCD(1B)\"),\n    \"RULE:R-HZN-01\": dict(type=\"Rule\"), \"RULE:R-SIP-01\": dict(type=\"Rule\"), \"RULE:R-TAX-01\": dict(type=\"Rule\"),\n    \"RULE:R-RISK-03\": dict(type=\"Rule\"), \"RULE:R-FQ-02\": dict(type=\"Rule\"),\n    \"ADV:R. Menon\": dict(type=\"Adviser\", reg=\"INA000012345\"),\n}\n\nEDGES = [\n    (\"PLN-2021-0077\", \"FND:Arbor Nifty 50 Index\", \"HOLDS\", dict(weight=0.45, reasoning=\"low-cost core for 24y horizon\")),\n    (\"PLN-2021-0077\", \"NPS:Tier-I active E75\", \"HOLDS\", dict(weight=0.10, reasoning=\"80CCD(1B) + lock-in suits retirement\")),\n    (\"PLN-2021-0077\", \"RULE:R-SIP-01\", \"SATISFIES\", dict(fact=\"SIP 62% of surplus with 10% step-up\")),\n    (\"PLN-2023-0412\", \"FND:Arbor Nifty 50 Index\", \"HOLDS\", dict(weight=0.40, reasoning=\"house sleeve equity capped at 40%\")),\n    (\"PLN-2023-0412\", \"FND:Sarovar Short Duration\", \"HOLDS\", dict(weight=0.45, reasoning=\"5y goal debt core, AAA/sovereign\")),\n    (\"PLN-2023-0412\", \"RULE:R-HZN-01\", \"SATISFIES\", dict(fact=\"equity 40% ≤ cap\")),\n    (\"PLN-2024-0931\", \"FND:Kestrel Flexi Cap\", \"HOLDS\", dict(weight=0.65, reasoning=\"investor requested growth tilt\")),\n    (\"PLN-2024-0931\", \"RULE:R-HZN-01\", \"ORIGINATED\", dict(lesson=\"65% equity on a 4y goal forced a sale at −18%\")),\n    (\"PLN-2022-0188\", \"FND:Kestrel Flexi Cap\", \"HOLDS\", dict(weight=0.70)),\n    (\"PLN-2022-0188\", \"RULE:R-SIP-01\", \"ORIGINATED\", dict(lesson=\"SIP at 100% of surplus is abandoned at the first shock\")),\n    (\"PLN-2025-1204\", \"FND:Kestrel Tax Saver\", \"HOLDS\", dict(weight=0.20)),\n    (\"PLN-2025-1204\", \"RULE:R-TAX-01\", \"ORIGINATED\", dict(lesson=\"ELSS lock-in bought nothing under the new regime\")),\n    (\"PLN-2023-0412\", \"PLN-2024-0931\", \"SIMILAR_TO\", dict(score=0.81)),\n    *[(p, \"ADV:R. Menon\", \"APPROVED_BY\", dict()) for p in\n      (\"PLN-2021-0077\", \"PLN-2023-0412\", \"PLN-2024-0931\", \"PLN-2022-0188\")],\n]\n",
+"README.md": "# Goalwright — agentic goal-based investment planning (OpenAI Agents SDK demo)\n\nAn investor arrives with a profile and a set of goals. A team of specialist\nagents produces a **goal-funded plan** — for each goal a target corpus, horizon,\nstrategic asset allocation, SIP / lump-sum schedule and a shortlist of concrete\ninstruments — then monitors it. Every recommendation carries its reasoning, the\npeer plans it was benchmarked against, the rules it satisfied and the adviser\nwho approved it, all stored as edges in a **context graph**.\n\n## Pipeline\n\n    Profile & Risk Analyst                        Stage 1  sequential\n      └─ gather( Goal Planner ‖ Allocation Strategist ‖ Suitability & Rules )\n         └─ fund_plan()                           Stage 3  plain Python\n            └─ Instrument Selector                Stage 4  reads the graph\n               └─ Plan Composer → propose_plan()  Stage 5  needs_approval\n\n    monitor.py: Portfolio Monitor → gather( Drift ‖ Goal Tracker ‖ Fund Quality )\n                → triage() → Review Proposer → propose_review()  needs_approval\n\n## Run\n\n    pip install -r requirements.txt\n    export OPENAI_API_KEY=sk-...\n    python run_plan.py INV-2026-7731\n    python monitor.py PLN-2026-2201 2027-12-05\n\n## Human-in-the-loop\n\n`propose_plan` and `propose_review` are decorated with\n`@function_tool(needs_approval=needs_adviser_signoff)`. A new plan, any\nrebalance, any SIP change of ₹10,000/month or more, or any rule waiver pauses\nthe run; `result.to_state()` is handed to the adviser console and resumed with\n`state.approve()` / `state.reject()`.\n\n## Rules with provenance\n\nRules carry an `ORIGINATED` edge back to the plan that taught them:\n\n| rule      | text                                             | origin        |\n|-----------|--------------------------------------------------|---------------|\n| R-HZN-01  | equity ≤ 40% for 3–5y goals, glide from T-2y      | PLN-2024-0931 |\n| R-SIP-01  | SIP ≤ 90% of surplus, prefer step-up              | PLN-2022-0188 |\n| R-TAX-01  | ELSS only under old regime, only to 80C headroom  | PLN-2025-1204 |\n\nSynthetic data. Fictional fund houses. Return and inflation assumptions are\nillustrative and not investment advice.\n"
+};
+
+/* Graph model (mirrors context_graph.build_demo_graph)                */
+/* ------------------------------------------------------------------ */
+const NODES = [
+  {id:"INV:Priya", t:"Investor", x:90, y:340, l:"Priya Raghavan", s:"34 · ₹32 L · MODERATE*"},
+  {id:"NEW-A", t:"New", x:285, y:340, l:"PLN-2026-2201", s:"new · 4 goals", only:"A"},
+  {id:"PLN-2026-2201", t:"Plan", x:285, y:250, l:"PLN-2026-2201", s:"booked Oct-2026", out:"ACTIVE", only:"B"},
+  {id:"NEW-B", t:"New", x:285, y:440, l:"REV-2027-0318", s:"review · Dec-2027", only:"B"},
+
+  {id:"FND:Nifty50", t:"Instrument", x:470, y:70,  l:"Arbor Nifty 50 Index", s:"ER 0.10 · TE 0.07"},
+  {id:"FND:Flexi",   t:"Instrument", x:470, y:165, l:"Kestrel Flexi Cap", s:"α 1.8 · 4★ · active"},
+  {id:"FND:ELSS",    t:"Instrument", x:470, y:260, l:"Kestrel Tax Saver", s:"ELSS · 3y lock"},
+  {id:"FND:ShortDur",t:"Instrument", x:470, y:355, l:"Sarovar Short Duration", s:"AAA/sov 92% · 2.1y"},
+  {id:"ETF:Gold",    t:"Instrument", x:470, y:450, l:"Sarovar Gold ETF", s:"gold hedge sleeve"},
+  {id:"REIT:Meridian",t:"Instrument", x:470, y:545, l:"Meridian Office REIT", s:"yield 6.4%"},
+  {id:"NPS",         t:"Instrument", x:470, y:640, l:"NPS Tier-I · E75", s:"80CCD(1B)"},
+
+  {id:"RULE:FQ",   t:"Rule", x:620, y:110, l:"R-FQ-02", s:"manager change → WATCH"},
+  {id:"RULE:HZN",  t:"Rule", x:620, y:230, l:"R-HZN-01", s:"equity ≤ 40% · 3–5y"},
+  {id:"RULE:SIP",  t:"Rule", x:620, y:380, l:"R-SIP-01", s:"SIP ≤ 90% surplus"},
+  {id:"RULE:TAX",  t:"Rule", x:620, y:510, l:"R-TAX-01", s:"ELSS · old regime only"},
+  {id:"RULE:RISK", t:"Rule", x:620, y:620, l:"R-RISK-03", s:"min(stated, observed)"},
+
+  {id:"PLN-2021-0077", t:"Plan", x:790, y:70,  l:"PLN-2021-0077", s:"retire · 10% step-up", out:"AHEAD"},
+  {id:"PLN-2023-0412", t:"Plan", x:790, y:190, l:"PLN-2023-0412", s:"house 5y · 40/60 glide", out:"ON_TRACK"},
+  {id:"PLN-2024-0931", t:"Plan", x:790, y:330, l:"PLN-2024-0931", s:"house 4y · 65% equity", out:"SLIPPED"},
+  {id:"PLN-2022-0188", t:"Plan", x:790, y:470, l:"PLN-2022-0188", s:"SIP = 100% surplus", out:"ABANDONED"},
+  {id:"PLN-2025-1204", t:"Plan", x:790, y:610, l:"PLN-2025-1204", s:"ELSS · new regime", out:"REWORKED"},
+
+  {id:"INV:Sunita",  t:"Investor", x:945, y:70,  l:"Sunita R.", s:"31 · MODERATE"},
+  {id:"INV:Anirudh", t:"Investor", x:945, y:190, l:"Anirudh S.", s:"35 · MODERATE"},
+  {id:"ADV:Menon",   t:"Adviser",  x:945, y:300, l:"R. Menon", s:"SEBI RIA · adviser"},
+  {id:"INV:Megha",   t:"Investor", x:945, y:400, l:"Megha K.", s:"33 · MOD_AGG"},
+  {id:"INV:Rohan",   t:"Investor", x:945, y:500, l:"Rohan D.", s:"36 · MODERATE"},
+  {id:"INV:Karan",   t:"Investor", x:945, y:610, l:"Karan V.", s:"34 · new regime"},
+];
+const EDGES = [
+  ["NEW-A","INV:Priya","PLANNED_FOR"],
+  ["NEW-A","FND:Nifty50","HOLDS"],["NEW-A","FND:Flexi","HOLDS"],["NEW-A","FND:ELSS","HOLDS"],["NEW-A","FND:ShortDur","HOLDS"],["NEW-A","ETF:Gold","HOLDS"],["NEW-A","REIT:Meridian","HOLDS"],["NEW-A","NPS","HOLDS"],
+  ["PLN-2026-2201","INV:Priya","PLANNED_FOR"],["NEW-B","PLN-2026-2201","REVIEWS"],
+  ["PLN-2026-2201","FND:Nifty50","HOLDS"],["PLN-2026-2201","FND:Flexi","HOLDS"],["PLN-2026-2201","FND:ShortDur","HOLDS"],["PLN-2026-2201","FND:ELSS","HOLDS"],
+  ["NEW-B","RULE:HZN","CITES"],["NEW-B","RULE:FQ","CITES"],
+  ["PLN-2021-0077","FND:Nifty50","HOLDS"],["PLN-2021-0077","NPS","HOLDS"],["PLN-2021-0077","RULE:SIP","SATISFIES"],
+  ["PLN-2023-0412","FND:Nifty50","HOLDS"],["PLN-2023-0412","FND:ShortDur","HOLDS"],["PLN-2023-0412","RULE:HZN","SATISFIES"],
+  ["PLN-2024-0931","FND:Flexi","HOLDS"],["PLN-2024-0931","RULE:HZN","ORIGINATED"],
+  ["PLN-2022-0188","FND:Flexi","HOLDS"],["PLN-2022-0188","RULE:SIP","ORIGINATED"],
+  ["PLN-2025-1204","FND:ELSS","HOLDS"],["PLN-2025-1204","RULE:TAX","ORIGINATED"],
+  ["FND:Flexi","RULE:FQ","SUBJECT_TO"],
+  ["PLN-2023-0412","PLN-2024-0931","SIMILAR_TO"],
+  ["PLN-2021-0077","INV:Sunita","PLANNED_FOR"],["PLN-2023-0412","INV:Anirudh","PLANNED_FOR"],["PLN-2024-0931","INV:Megha","PLANNED_FOR"],["PLN-2022-0188","INV:Rohan","PLANNED_FOR"],["PLN-2025-1204","INV:Karan","PLANNED_FOR"],
+  ["PLN-2021-0077","ADV:Menon","APPROVED_BY"],["PLN-2023-0412","ADV:Menon","APPROVED_BY"],["PLN-2024-0931","ADV:Menon","APPROVED_BY"],["PLN-2022-0188","ADV:Menon","APPROVED_BY"],
+];
+
+/* ------------------------------------------------------------------ */
+/* Agents, stages, plan-file sections — per scenario                   */
+/* ------------------------------------------------------------------ */
+const AG = {
+  pipe:{n:"Pipeline (run_plan.py)",c:"var(--ag-orch)"}, intake:{n:"Profile & Risk Analyst",c:"var(--ag-intake)"},
+  goal:{n:"Goal Planner",c:"var(--ag-goal)"}, alloc:{n:"Allocation Strategist",c:"var(--ag-alloc)"}, rules:{n:"Suitability & Rules",c:"var(--ag-rules)"},
+  sel:{n:"Instrument Selector",c:"var(--ag-sel)"}, comp:{n:"Plan Composer",c:"var(--ag-orch)"},
+  mon:{n:"Portfolio Monitor",c:"var(--ag-intake)"}, drift:{n:"Drift Analyst",c:"var(--ag-goal)"}, track:{n:"Goal Tracker",c:"var(--ag-alloc)"}, fq:{n:"Fund Quality Reviewer",c:"var(--ag-rules)"}, rev:{n:"Review Proposer",c:"var(--ag-orch)"},
+  graph:{n:"Context Graph",c:"var(--ag-graph)"}, human:{n:"Adviser (human)",c:"var(--ag-human)"}
+};
+const L = n => "₹" + (n/1e5).toFixed(n%1e5?1:0).replace(/\.0$/,"") + " L";
+const Cr = n => "₹" + (n/1e7).toFixed(2) + " Cr";
+const R = n => "₹" + n.toLocaleString("en-IN");
+
+const STAGES = {
+A:[
+  {id:"intake",k:"intake",role:"Stage 1 · KYC + questionnaire + ledger → InvestorProfile"},
+  {lanes:[{id:"goal",k:"goal",role:"corpus math → GoalPlan"},{id:"alloc",k:"alloc",role:"SAA + peers → AllocationPlan"},{id:"rules",k:"rules",role:"tax · eligibility → SuitabilityResult"}]},
+  {id:"fund",k:"pipe",role:"Stage 3 · fund_plan() — priority waterfall, plain Python",name:"fund_plan()"},
+  {id:"sel",k:"sel",role:"Stage 4 · context graph → Shortlist (reason · peers · rules)"},
+  {id:"comp",k:"comp",role:"Stage 5 · propose_plan()"},
+  {id:"hitl",k:"human",role:"needs_approval → interruption"}
+],
+B:[
+  {id:"mon",k:"mon",role:"Stage 1 · SIP ledger · NAVs · HR feed · fund research → Signals"},
+  {lanes:[{id:"drift",k:"drift",role:"bands → DriftReport"},{id:"track",k:"track",role:"re-projection → GoalTracking"},{id:"fq",k:"fq",role:"graph → FundQualityReport"}]},
+  {id:"triage",k:"pipe",role:"Stage 3 · triage() — severity score, plain Python",name:"triage()"},
+  {id:"rev",k:"rev",role:"Stage 4 · propose_review()"},
+  {id:"hitl",k:"human",role:"needs_approval → interruption"}
+]};
+
+const FILE_SECTIONS = {
+A:[["intake","Profile & risk","Awaiting Profile & Risk Analyst…"],["goal","Goals & corpus","Awaiting Goal Planner…"],["alloc","Allocation","Awaiting Allocation Strategist…"],["rules","Suitability & rules","Awaiting Suitability & Rules…"],["sel","Instruments","Awaiting Instrument Selector…"],["dec","Proposal","Plan Composer runs after selection."]],
+B:[["mon","Signals","Awaiting Portfolio Monitor…"],["drift","Drift","Awaiting Drift Analyst…"],["track","Goal tracking","Awaiting Goal Tracker…"],["fq","Fund quality","Awaiting Fund Quality Reviewer…"],["dec","Review proposal","Review Proposer runs after triage."]]};
+const SEC_COLOR = {intake:"intake",goal:"goal",alloc:"alloc",rules:"rules",sel:"sel",dec:"orch",mon:"intake",drift:"goal",track:"alloc",fq:"rules"};
+
+/* ------------------------------------------------------------------ */
+/* Plan-file fillers                                                   */
+/* ------------------------------------------------------------------ */
+const $ = id => document.getElementById(id);
+function fill(sec,rows,status,cls="good"){
+  $(sec+"-body").innerHTML=`<dl class="kv">${rows.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>`;
+  $("s-"+sec).textContent=status; $("s-"+sec).className="chip "+cls;
+}
+function profileFill(){
+  $("intake-body").innerHTML=`<dl class="kv"><dt>Investor</dt><dd>Priya Raghavan · 34 · Bengaluru</dd><dt>Income</dt><dd>₹32 L p.a. · take-home ₹2.0 L/mo</dd><dt>Dependants</dt><dd>child (6) · mother (partial)</dd><dt>Surplus</dt><dd>₹85,000/mo after ₹19,500 car EMI (18 left)</dd><dt>Assets</dt><dd>EPF ₹14.2 L · PPF ₹4.1 L · equity MF ₹6.8 L · savings ₹3.5 L</dd><dt>Tax regime</dt><dd>OLD · 80C headroom ₹63,600</dd></dl>
+  <div class="meter" style="background:linear-gradient(90deg,var(--ag-alloc) 0 35%,var(--warn) 35% 60%,var(--ag-goal) 60% 80%,var(--crit) 80%)"><span class="pin" style="left:54%"></span><span class="pin" style="left:68%;opacity:.35"></span></div>
+  <div class="meter-scale"><span>conservative</span><span>moderate</span><span>mod-agg</span><span>aggressive</span></div>
+  <div class="score num" style="font-size:18px">MODERATE <span class="chip warn">stated 68 → observed 54</span></div>
+  <ul class="flags"><li>Questionnaire 68/100 (moderately aggressive, validated 30-Sep-2026)</li><li class="bad">Paused SIPs Mar–Apr 2025 in a −14% drawdown; redeemed ₹1.2 L near the trough</li><li>R-RISK-03: effective risk = min(stated, observed) = MODERATE</li></ul>`;
+  $("s-intake").textContent="MODERATE"; $("s-intake").className="chip warn";
+}
+const GOALS = [
+  {g:"Emergency fund",h:"now",target:510000,seed:350000,gap:160000,sip:20000,note:"6 × ₹85k essentials · ₹20k × 8 mo"},
+  {g:"House down-payment",h:"5y · Oct-2031",target:2490000,seed:1020000,gap:1470000,sip:19600,note:"₹19.5 L today @5% · seed = equity MF ₹6.8 L"},
+  {g:"Child's education",h:"12y · 2038",target:6300000,seed:930000,gap:5360000,sip:12000,note:"₹25 L today @8% · PPF extended once · 10% step-up"},
+  {g:"Retire at 58",h:"24y · 2050",target:85000000,seed:27200000,gap:57900000,sip:19000,note:"₹70k/mo → ₹2.83 L/mo · 25× · EPF+NPS seed · 10% step-up"},
+];
+let goalRows = 0;
+function goalTable(upto){
+  goalRows = upto;
+  const rows = GOALS.slice(0,upto);
+  $("goal-body").innerHTML=`<table class="val num"><thead><tr><th>goal · horizon</th><th>target</th><th>seed FV</th><th>SIP/mo</th></tr></thead><tbody>
+   ${rows.map(r=>`<tr><td>${r.g}<div style="font-size:10.5px;color:var(--ink2)">${r.h} · ${r.note}</div></td><td>${r.target>=1e7?Cr(r.target):L(r.target)}</td><td>${r.seed>=1e7?Cr(r.seed):L(r.seed)}</td><td>${R(r.sip)}</td></tr>`).join("")}
+   ${upto===4?`<tr class="total"><td>total SIP (+ NPS ₹4,167)</td><td></td><td></td><td>${R(74767)}</td></tr>`:""}</tbody></table><div id="funding"></div>`;
+  $("s-goal").textContent = upto===4 ? "4 goals · ₹74,767/mo" : `${upto} / 4 goals`; $("s-goal").className="chip "+(upto===4?"good":"warn");
+}
+function fundingFill(){
+  $("funding").innerHTML=`<div class="payable"><div><div style="font-size:12px;color:var(--ink2)">fund_plan(): ₹74,767 ≤ 90% × ₹85,000 surplus ✓ · buffer ₹10,233</div><div style="font-size:11px;color:var(--ink2)">redirects: emergency ₹20k → house from month 9 · car EMI ₹19.5k → retirement from Apr-2028</div></div><div class="amt num">88%</div></div>`;
+}
+function bar(parts){ return `<div class="bar">${parts.map(([c,w])=>`<i class="${c}" style="width:${w}%"></i>`).join("")}</div>`; }
+function allocFill(){
+  $("alloc-body").innerHTML=`<div class="saa">
+   <div class="row"><div class="lbl"><b>Emergency</b><span>liquid 60 · sweep-FD 40</span></div>${bar([["ca",100]])}</div>
+   <div class="row"><div class="lbl"><b>House · 5y</b><span>eq 40 · debt 60 → 0/100 from Oct-2029</span></div>${bar([["eq",40],["de",60]])}</div>
+   <div class="row"><div class="lbl"><b>Education · 12y</b><span>eq 65 · debt 25 · gold 10</span></div>${bar([["eq",65],["de",25],["go",10]])}</div>
+   <div class="row"><div class="lbl"><b>Retirement · 24y</b><span>eq 65 · debt 25 · gold 5 · REIT 5</span></div>${bar([["eq",65],["de",25],["go",5],["re",5]])}</div>
+  </div><div class="saa-key"><span style="--k:var(--ag-goal)">equity</span><span style="--k:var(--ag-alloc)">debt</span><span style="--k:var(--trace)">gold</span><span style="--k:var(--ag-sel)">REIT</span><span style="--k:var(--ink2)">cash/liquid</span></div>
+  <div class="prec"><span>PLN-2023-0412</span><span>PLN-2021-0077</span><span class="bad">PLN-2024-0931</span><span class="bad">PLN-2022-0188</span></div>
+  <div style="font-size:11.5px;color:var(--ink2);margin-top:6px">Direct-equity sleeve 0% (not eligible on observed risk). House equity capped by R-HZN-01, learnt from PLN-2024-0931.</div>`;
+  $("s-alloc").textContent="4 SAAs · 4 peers"; $("s-alloc").className="chip good";
+}
+function rulesFill(){
+  const rows=[["R-TAX-01","ELSS under old regime, within 80C headroom","₹63,600 headroom → ₹5,000/mo","ok"],["R-TAX-02","NPS 80CCD(1B) when horizon ≥ 15y","24y → ₹50,000/yr","ok"],["R-ELIG-01","REIT/InvIT eligible","MODERATE · 24y → cap 5%","ok"],["R-ELIG-02","Direct-equity sleeve","risk MODERATE < MOD_AGG → <b>not eligible</b>","no"],["R-ELIG-03","AIF / alternatives","ticket < ₹1 Cr → NA","na"],["R-HZN-01","Equity ≤ 40% on 3–5y goals","house 40% ✓","ok"],["R-SIP-01","SIP ≤ 90% surplus","88% ✓ · step-up used","ok"],["R-EMG-01","Emergency fund first","6× essentials · funded month 8","ok"],["R-GOLD-01","SGB if tranche open else ETF","no tranche this quarter → ETF","ok"]];
+  $("rules-body").innerHTML=`<table class="val"><thead><tr><th>rule</th><th style="text-align:left">check</th><th>fact</th></tr></thead><tbody>${rows.map(([id,t,f,s])=>`<tr><td class="mono" style="white-space:nowrap">${id}</td><td style="text-align:left">${t}</td><td class="${s==="ok"?"ok":s==="no"?"infl":""}">${f}</td></tr>`).join("")}</tbody></table>`;
+  $("s-rules").textContent="8 pass · 1 fail · 0 waived"; $("s-rules").className="chip good";
+}
+const PICKS = [
+  ["Emergency",[["Arbor Liquid Fund","₹2.0 L lump + ₹12k/mo","T+1 liquidity, 100% sovereign/AAA; sweep-in FD ₹1.5 L for the instant tier.",["R-EMG-01"],["PLN-2023-0412"]]]],
+  ["House · 5y",[["Arbor Nifty 50 Index","40% · ₹7,840/mo + ₹6.8 L switch","Lowest-cost large-cap core (ER 0.10, TE 0.07); existing flexi/large-cap holdings switched in. Glides to 0% from Oct-2029.",["R-HZN-01"],["PLN-2023-0412 ON_TRACK","PLN-2024-0931 SLIPPED"]],["Sarovar Short Duration","45% · ₹8,820/mo","92% AAA/sovereign, duration 2.1y matches a 5-year goal; YTM 7.3%.",["R-HZN-01"],["PLN-2023-0412"]],["Bank FD ladder","15% · ₹2,940/mo","Quarterly ladder for the last 18 months' certainty.",[],[]]]],
+  ["Education · 12y",[["Arbor Nifty 50 Index + Midcap 150 Index","45% · ₹5,400/mo","Index core; midcap sleeve capped at 15% for MODERATE.",["R-RISK-03"],["PLN-2021-0077"]],["Kestrel Flexi Cap","20% · ₹2,400/mo","5y rolling alpha +1.8%, manager tenure 6y, 4★. Active sleeve only on 12y+ goals.",[],["PLN-2024-0931 (slippage was allocation, not fund)"]],["PPF (existing) + Sarovar Short Duration","25%","PPF ₹4.1 L extended once to 2039 → ₹9.3 L; top-up via short-duration fund.",[],[]],["Sarovar Gold ETF","10% · ₹1,200/mo","No primary SGB tranche open this quarter; ETF is the fallback hedge.",["R-GOLD-01"],[]]]],
+  ["Retirement · 24y",[["Kestrel Tax Saver (ELSS)","₹5,000/mo","Fills the ₹63,600 80C headroom exactly; 3-year lock is immaterial on a 24-year horizon.",["R-TAX-01"],["PLN-2025-1204 REWORKED"]],["Arbor Nifty 50 Index + Kestrel Flexi Cap","₹12,000/mo · 10% step-up","Index core 60/40 active; step-up keeps the first-year SIP at 88% of surplus.",["R-SIP-01"],["PLN-2021-0077 AHEAD","PLN-2022-0188 ABANDONED"]],["NPS Tier-I · active choice E75/C15/G10","₹4,167/mo","₹50,000/yr under 80CCD(1B); lock-in aligns with age 58–60.",["R-TAX-02"],["PLN-2021-0077"]],["Meridian Office REIT","5% · ₹1,000/mo","Eligible (MODERATE, 24y); 6.4% distribution yield, 89% occupancy.",["R-ELIG-01"],[]],["Direct-equity sleeve","0%","Not eligible: observed risk MODERATE. Revisit after 12 months of uninterrupted SIPs.",["R-ELIG-02"],[]]]],
+];
+let pickGroups = 0;
+function picksFill(upto){
+  pickGroups = upto;
+  $("sel-body").innerHTML = PICKS.slice(0,upto).map(([g,items])=>`<div class="gh">${g}</div><div class="inst">${items.map(([n,w,why,rules,peers])=>`<div class="it"><div class="n">${n}<span>${w}</span></div><div class="why">${why}</div><div class="meta">${rules.map(r=>`<span class="r">${r}</span>`).join("")}${peers.map(p=>`<span class="p">${p}</span>`).join("")}<span class="a">adviser: R. Menon</span></div></div>`).join("")}</div>`).join("");
+  $("s-sel").textContent = upto===4 ? "11 instruments" : `${upto} / 4 goals`; $("s-sel").className="chip "+(upto===4?"good":"warn");
+}
+function decisionCard(cls,title,body,prec,hitl,okTxt,noTxt){
+  $("dec-body").innerHTML=`<div class="decision ${cls}"><div class="d1">${title}</div><div class="d2">${body}</div><div class="prec">${prec.map(p=>`<span class="${p.startsWith("R-")?"r":""}">${p}</span>`).join("")}</div>
+   ${hitl?`<div class="hitl"><button class="btn ok" id="ok">✓ ${okTxt}</button><button class="btn no" id="no">✕ ${noTxt}</button></div>`:""}</div><div id="booked"></div>`;
+  $("s-dec").textContent = hitl?"awaiting adviser":"booked"; $("s-dec").className="chip "+(hitl?"warn":"good");
+  if(hitl){ $("ok").onclick=()=>resume("approve"); $("no").onclick=()=>resume("reject"); }
+}
+function booked(txt,cls){
+  $("booked").innerHTML=`<div class="booked">${txt}</div>`;
+  $("s-dec").textContent=cls==="crit"?"returned":"booked"; $("s-dec").className="chip "+cls;
+  $("claim-stage").textContent=cls==="crit"?"Revision pending":(sc==="A"?"Plan booked":"Review booked"); $("claim-stage").className="chip "+cls;
+  const hb=document.querySelector(".hitl"); if(hb) hb.remove();
+}
+/* scenario B fillers */
+function signalsFill(){
+  $("mon-body").innerHTML=`<ul class="flags"><li class="bad">SIP ledger: 2 missed debits on education mandate (Oct, Nov 2027) — bank mandate limit lapsed after step-up</li><li>NAV feed: equity +31% since booking; house sleeve equity now 51%</li><li>HR feed: salary revision +22% (Nov-2027) → surplus ₹1.04 L/mo</li><li class="bad">Fund research: Kestrel Flexi Cap — lead manager exit announced 18-Nov-2027</li><li class="bad">Property index: Bengaluru residential +11% y/y vs 5% assumed</li></ul>`;
+  $("s-mon").textContent="5 signals"; $("s-mon").className="chip warn";
+}
+function driftFill(step){
+  const rows=[["House · equity","40 ± 7","51","breach"],["Education · equity","65 ± 8","69","ok"],["Retirement · equity","65 ± 8","71","ok"],["Retirement · gold","5 ± 3","4","ok"]];
+  $("drift-body").innerHTML=`<table class="val num"><thead><tr><th>sleeve</th><th>band</th><th>now</th><th>status</th></tr></thead><tbody>${rows.map(([s,b,n,st])=>`<tr><td>${s}</td><td>${b}</td><td>${n}%</td><td class="${st==="breach"?"infl":"ok"}">${st==="breach"?"BREACH +4pp":"in band"}</td></tr>`).join("")}</tbody></table>
+  ${step>1?`<div style="font-size:12px;margin-top:8px">Rebalance: sell ₹1.3 L Arbor Nifty 50 (house sleeve) → Sarovar Short Duration. LTCG ≈ ₹38,000, inside the ₹1.25 L annual exemption → tax ₹0 <span class="chip good">R-TAX-04</span></div>`:""}`;
+  $("s-drift").textContent = step>1 ? "1 breach · rebalance ₹1.3 L" : "1 breach"; $("s-drift").className="chip warn";
+}
+function trackFill(step){
+  const rows=[["House · 2031","78%","61%","−17pp","bad"],["Education · 2038","83%","81%","−2pp","warn"],["Retirement · 2050","74%","88%","+14pp","good"]].slice(0,step);
+  $("track-body").innerHTML=`<table class="val num"><thead><tr><th>goal</th><th>P at booking</th><th>P now</th><th>Δ</th></tr></thead><tbody>${rows.map(([g,a,b,d,c])=>`<tr><td>${g}</td><td>${a}</td><td>${b}</td><td class="${c==="bad"?"infl":c==="good"?"ok":""}">${d}</td></tr>`).join("")}</tbody></table>
+  ${step>=3?`<div style="font-size:12px;margin-top:8px">New surplus ₹1.04 L/mo → step-up proposal: house +₹6,000, retirement +₹12,000 from Jan-2028. House P(success) restores to 72%; target revised to ₹28.6 L at 8% property inflation.</div>`:""}`;
+  $("s-track").textContent = step>=3 ? "house slipping · step-up drafted" : "projecting…"; $("s-track").className="chip "+(step>=3?"warn":"");
+}
+function fqFill(step){
+  $("fq-body").innerHTML=`<dl class="kv"><dt>Fund</dt><dd>Kestrel Flexi Cap · held in education + retirement sleeves</dd><dt>Event</dt><dd>Lead manager exit 18-Nov-2027 · successor track record 2.1y</dd><dt>Metrics</dt><dd>5y rolling α +1.8% · rating hold 4★ · AUM ₹22,900 Cr</dd><dt>Rule</dt><dd>R-FQ-02 → <span class="chip warn">WATCH · 2 quarters · no new money</span></dd>${step>1?`<dt>Precedent</dt><dd>2 prior manager-change cases in the graph: switched after 2 quarters only when rolling α turned negative (adviser note, R. Menon)</dd>`:""}</dl>`;
+  $("s-fq").textContent="1 fund on WATCH"; $("s-fq").className="chip warn";
+}
+function triageFill(){
+  const el=document.createElement("div"); el.id="triage-box";
+  el.innerHTML=`<div class="payable" style="margin-top:12px"><div><div style="font-size:12px;color:var(--ink2)">triage(): SIP_MISS 2 + DRIFT_BREACH 2 + GOAL_SLIP 3 + ASSUMPTION 2 + MANAGER_CHANGE 1 + LIFE_EVENT 1 + house Δ ≤ −10pp 3</div><div style="font-size:11px;color:var(--ink2)">threshold 5 → REVIEW_REQUIRED</div></div><div class="amt num">14</div></div>`;
+  $("mon-body").appendChild(el);
+}
+
+/* ------------------------------------------------------------------ */
+/* Scenarios — a list of TICKS; a tick is a list of events landing at   */
+/* the same instant (one per lane). Tick duration = slowest event.      */
+/* ------------------------------------------------------------------ */
+const SCEN = {
+A: {
+  newNode:"NEW-A", cardTitle:"Incoming investor", stage0:"Onboarding",
+  card:{id:"INV-2026-7731", who:"Priya Raghavan · 34 · Bengaluru", rows:[["Income","₹32 L p.a. · old regime"],["Surplus","₹85,000 / month"],["Dependants","child (6) · mother"],["Assets","₹28.5 L across EPF · PPF · MF · savings"],["Liabilities","car loan ₹3.2 L · 18 EMIs"]],
+        goals:[["Emergency fund","now"],["House down-payment","5 y"],["Child's education","12 y"],["Retire at 58","24 y"]],
+        docs:["kyc ✓","salary_slips ×3","risk_questionnaire ✓","bank_ledger 36m","cams_statement","form_12bb"]},
+  ticks:[
+    [{a:"pipe",t:"agent_start",d:0,w:"build_plan(\"INV-2026-7731\") — Stage 1 starts",c:"profile = await Runner.run(profile_analyst, \"Build the InvestorProfile…\", context=ctx)",on:["intake"]}],
+    [{a:"intake",t:"call",d:3,w:"Pulls KYC, income, dependants, assets, liabilities, surplus and tax regime",c:"<b>fetch_kyc_and_profile</b>() → age 34 · income ₹32 L · take-home ₹2.0 L/mo · expenses ₹1.15 L/mo (incl. car EMI ₹19,500 × 18) · surplus ₹85,000 · regime OLD\n  assets: EPF ₹14.2 L · PPF ₹4.1 L (2019) · equity MF ₹6.8 L · savings ₹3.5 L · liabilities: car loan ₹3.2 L"}],
+    [{a:"intake",t:"call",d:3,w:"Reconciles stated risk with observed behaviour — the lower one wins",c:"<b>fetch_risk_questionnaire</b>() → 68/100 · MOD_AGG (validated 30-Sep-2026)\n<b>observe_behaviour</b>(months=36) → 54 · MODERATE — SIPs paused Mar–Apr 2025 in a −14% drawdown; ₹1.2 L redeemed near the trough\n<b>record_profile</b>(risk_stated=\"MOD_AGG\", risk_observed=\"MODERATE\", reason=\"R-RISK-03 min(stated, observed)\") → MODERATE",fx:profileFill,g:{hl:["INV:Priya","RULE:RISK"],vis:["INV:Priya","RULE:RISK"]}}],
+    [{a:"pipe",t:"fan",d:0,w:"InvestorProfile in hand — Stage 2 fans out. Goal Planner, Allocation Strategist and Suitability start in the same instant, sharing one PlanContext.",
+      c:"goals, alloc, suit = await asyncio.gather(\n  Runner.run(goal_planner, facts, context=ctx),\n  Runner.run(allocation_strategist, facts, context=ctx),\n  Runner.run(suitability_engine, facts, context=ctx))",done:["intake"],on:["goal","alloc","rules"],g:{hl:["NEW-A"],vis:["NEW-A"],keep:true,e:[["NEW-A","INV:Priya"]]}}],
+    [{a:"goal",t:"call",d:3,w:"Emergency fund first (R-EMG-01)",c:"<b>compute_goal_corpus</b>(\"emergency\", cost_today=85000×6, years=0, existing=350000)\n→ target ₹5.1 L · seed ₹3.5 L · gap ₹1.6 L · SIP ₹20,000 × 8 months",fx:()=>goalTable(1)},
+     {a:"alloc",t:"graph",d:4,w:"Finds investors who looked like this one and how their plans turned out",c:"<b>graph_find_peer_plans</b>(age_band=\"30-35\", income_band=\"25-40L\", goals=[house, education, retirement], risk=MODERATE)\n→ PLN-2023-0412 (rel 9) ON_TRACK · PLN-2021-0077 (rel 8) AHEAD · PLN-2024-0931 (rel 7) SLIPPED · PLN-2022-0188 (rel 6) ABANDONED",
+      g:{hl:["PLN-2023-0412","PLN-2021-0077","PLN-2024-0931","PLN-2022-0188"],keep:true}},
+     {a:"rules",t:"call",d:4,w:"Tax regime and deduction headroom",c:"<b>check_tax_regime</b>() → regime OLD ✓ · 80C used ₹86,400 (EPF employee) · 80C headroom ₹63,600 · 80CCD(1B) headroom ₹50,000\n  R-TAX-01 PASS (ELSS allowed, cap ₹63,600/yr) · R-TAX-02 PASS (NPS, horizon 24y)",g:{hl:["RULE:TAX"],keep:true}}],
+    [{a:"goal",t:"call",d:4,w:"House down-payment: today's cost grown at property inflation; existing equity MF becomes the seed",c:"<b>compute_goal_corpus</b>(\"house\", cost_today=1950000, inflation=0.05, years=5, existing=680000, existing_return=0.085, blended_return=0.085)\n→ target ₹24.9 L · seed FV ₹10.2 L · gap ₹14.7 L · SIP ₹19,600 flat",fx:()=>goalTable(2)},
+     {a:"alloc",t:"graph",d:4,w:"Traverses the slipped house plan to see what went wrong — and finds the rule it taught",c:"<b>graph_traverse</b>(\"PLN-2024-0931\", max_depth=2) → 6 nodes\n  -HOLDS-> FND:Kestrel Flexi Cap (65% equity on a 4y goal)\n  -OUTCOME-> SLIPPED: sold −18% in 2025, goal pushed 2y\n  -ORIGINATED-> RULE:R-HZN-01 \"equity ≤ 40% for 3–5y goals; glide from T-2y\"\n  -SIMILAR_TO-> PLN-2023-0412 (40/60 glide) ON_TRACK",
+      g:{hl:["FND:Flexi","RULE:HZN"],flag:["PLN-2024-0931"],keep:true,e:[["PLN-2024-0931","FND:Flexi"],["PLN-2024-0931","RULE:HZN"],["PLN-2023-0412","PLN-2024-0931"],["PLN-2023-0412","RULE:HZN"]]}},
+     {a:"rules",t:"call",d:4,w:"Product eligibility — direct equity fails on observed behaviour, REIT passes",c:"<b>check_eligibility</b>(\"REIT\") → eligible ✓ (MODERATE, horizon 24y) · cap 5% · R-ELIG-01\n<b>check_eligibility</b>(\"DIRECT_EQUITY\") → <b>not eligible</b> · risk_effective MODERATE < MOD_AGG · R-ELIG-02\n<b>check_eligibility</b>(\"AIF\") → NA · ticket < ₹1 Cr · R-ELIG-03\n<b>record_suitability</b>(passed=8, failed=[R-ELIG-02], waived=[])",fx:rulesFill}],
+    [{a:"goal",t:"call",d:4,w:"Child's education: 8% education inflation; the PPF account is extended once and earmarked here",c:"<b>compute_goal_corpus</b>(\"education\", cost_today=2500000, inflation=0.08, years=12, existing=410000 [PPF], existing_return=0.071, blended_return=0.11, step_up=0.10)\n→ target ₹63.0 L · seed FV ₹9.3 L · gap ₹53.6 L · SIP ₹12,000 with 10% step-up (flat would be ₹17,900)",fx:()=>goalTable(3)},
+     {a:"alloc",t:"graph",d:4,w:"Reads the two plans that are ahead or on track for what they hold",c:"<b>graph_traverse</b>(\"PLN-2021-0077\") → -HOLDS-> FND:Arbor Nifty 50 Index (45%, \"low-cost core for 24y\") · -HOLDS-> NPS Tier-I E75 · -SATISFIES-> RULE:R-SIP-01 (62% of surplus, 10% step-up) · AHEAD 1.3y\n<b>graph_traverse</b>(\"PLN-2023-0412\") → -HOLDS-> Nifty 50 (40%) · -HOLDS-> Sarovar Short Duration (45%) · -APPROVED_BY-> ADV:R. Menon",
+      g:{hl:["FND:Nifty50","NPS","FND:ShortDur","RULE:SIP","ADV:Menon"],keep:true,e:[["PLN-2021-0077","FND:Nifty50"],["PLN-2021-0077","NPS"],["PLN-2021-0077","RULE:SIP"],["PLN-2023-0412","FND:Nifty50"],["PLN-2023-0412","FND:ShortDur"],["PLN-2023-0412","ADV:Menon"]]}},
+     {a:"rules",t:"out",d:0,w:"SuitabilityResult(passed=8, failed=[R-ELIG-02]) returned · lane done in 8s",done:["rules"],so:{rules:"8s · 8 pass / 1 fail"}}],
+    [{a:"goal",t:"call",d:5,w:"Retirement at 58: expenses inflated 24 years, 25× multiple; EPF and NPS projected as seed",c:"<b>compute_goal_corpus</b>(\"retirement\", cost_today=70000×12, inflation=0.06, years=24, multiple=25)\n→ expenses ₹2.83 L/mo at 58 · corpus ₹8.50 Cr\n  EPF ₹14.2 L + ₹14,400/mo @8.15% → ₹2.22 Cr · NPS ₹4,167/mo @10% → ₹0.50 Cr · gap ₹5.79 Cr\n→ SIP ₹19,000 with 10% step-up (flat ₹40,900 would breach R-SIP-01)\n<b>record_goal_plan</b>(goals=4, total_sip=74767)",fx:()=>goalTable(4)},
+     {a:"alloc",t:"call",d:4,w:"Sets the strategic allocation per goal from the horizon × risk matrix, capped by rule, benchmarked to peers",c:"<b>record_allocation</b>({\n  emergency: {liquid:60, fd:40},\n  house:     {equity:40, debt:60, glide:\"0/100 from Oct-2029\"},   # R-HZN-01\n  education: {equity:65, debt:25, gold:10},\n  retirement:{equity:65, debt:25, gold:5, reit:5, direct_equity:0}},\n  peers=[PLN-2023-0412, PLN-2021-0077, PLN-2024-0931, PLN-2022-0188])",fx:allocFill}],
+    [{a:"goal",t:"out",d:0,w:"GoalPlan(4 goals, total SIP ₹74,767) returned · lane done in 16s",done:["goal"],so:{goal:"16s · ₹74,767/mo"}},
+     {a:"alloc",t:"out",d:0,w:"AllocationPlan returned · lane done in 16s — Stage 2 wall clock = 16s",done:["alloc"],so:{alloc:"16s · 4 SAAs"}}],
+    [{a:"pipe",t:"fan",d:0,w:"gather() resolves — fan-in. Suitability finished 8s ago; Stage 2 cost 16s instead of 40s.",c:"funding = fund_plan(ctx)   # priority waterfall, no LLM\n→ emergency 20,000 · house 19,600 · education 12,000 · retirement 19,000 · NPS 4,167 = ₹74,767\n→ 88% of surplus ≤ 90% ceiling ✓ · buffer ₹10,233\n→ redirects: emergency→house @ month 9 · car EMI→retirement @ Apr-2028",on:["fund"],fx:fundingFill}],
+    [{a:"pipe",t:"call",d:0,w:"Stage 4 — Instrument Selector turns allocations into concrete holdings from the graph",c:"shortlist = await Runner.run(instrument_selector, ctx.to_json(), context=ctx)",done:["fund"],on:["sel"],so:{fund:"88% · ₹74,767"}}],
+    [{a:"sel",t:"graph",d:5,w:"Large-cap core: screens index funds by cost, tracking error and who holds them",c:"<b>graph_instruments</b>(\"large-cap index\", {max_expense_ratio:0.20, max_tracking_error:0.10, aum_cr:5000})\n→ FND:Arbor Nifty 50 Index · ER 0.10 · TE 0.07 · AUM ₹18,400 Cr · held_by [PLN-2021-0077 AHEAD, PLN-2023-0412 ON_TRACK]\n<b>graph_instruments</b>(\"liquid\") → FND:Arbor Liquid · 100% sovereign/AAA",fx:()=>picksFill(2),g:{hl:["FND:Nifty50"],keep:true,e:[["NEW-A","FND:Nifty50"]]}}],
+    [{a:"sel",t:"graph",d:5,w:"Debt, tax-saver, gold and REIT sleeves — each pick carries the rule that permits it",c:"<b>graph_instruments</b>(\"debt short-duration\", {aaa_sov_pct:80, max_mod_duration_y:2.5}) → FND:Sarovar Short Duration · 92% · 2.1y · YTM 7.3\n<b>graph_instruments</b>(\"ELSS\") → FND:Kestrel Tax Saver · ₹5,000/mo fills 80C headroom ₹63,600 · R-TAX-01\n<b>graph_instruments</b>(\"gold\") → no primary SGB tranche open → ETF:Sarovar Gold ETF · R-GOLD-01\n<b>graph_instruments</b>(\"REIT\") → REIT:Meridian Office REIT · yield 6.4% · eligible per R-ELIG-01, cap 5%\n<b>graph_instruments</b>(\"NPS\") → NPS Tier-I active choice E75/C15/G10 · R-TAX-02",fx:()=>picksFill(3),
+      g:{hl:["FND:ShortDur","FND:ELSS","ETF:Gold","REIT:Meridian","NPS"],keep:true,e:[["NEW-A","FND:ShortDur"],["NEW-A","FND:ELSS"],["NEW-A","ETF:Gold"],["NEW-A","REIT:Meridian"],["NEW-A","NPS"]]}}],
+    [{a:"sel",t:"graph",d:4,w:"Active sleeve: checks fund quality and whether the slipped peer's problem was the fund or the allocation",c:"<b>graph_fund_quality</b>(\"FND:Kestrel Flexi Cap\") → rolling α(5y) +1.8% · manager tenure 6y · 4★ · AUM ₹22,900 Cr · open_events []\n  held_by PLN-2024-0931 SLIPPED — ORIGINATED edge attributes slippage to 65% equity on a 4y goal, not to the fund\n→ keep 20% flexi sleeve on 12y+ goals only",g:{hl:["FND:Flexi"],keep:true,e:[["NEW-A","FND:Flexi"]]}}],
+    [{a:"sel",t:"call",d:5,w:"Records 11 instruments across 4 goals, each with reasoning, peers, rules and adviser of record",c:"<b>record_shortlist</b>(picks=[\n  {goal:\"house\", id:\"FND:Arbor Nifty 50 Index\", weight:0.40, reasoning:\"lowest-cost core; glide from Oct-2029\", peers:[PLN-2023-0412, PLN-2024-0931], rules:[R-HZN-01]},\n  {goal:\"retirement\", id:\"FND:Kestrel Tax Saver\", weight:\"₹5,000/mo\", reasoning:\"fills 80C headroom exactly\", peers:[PLN-2025-1204], rules:[R-TAX-01]},\n  {goal:\"retirement\", id:\"DIRECT_EQUITY\", weight:0, reasoning:\"not eligible on observed risk\", rules:[R-ELIG-02]},\n  … 8 more ]) → 11",fx:()=>picksFill(4)}],
+    [{a:"sel",t:"out",d:0,w:"Shortlist(11 instruments) returned · 19s",done:["sel"],so:{sel:"19s · 11 picks"}},],
+    [{a:"pipe",t:"call",d:0,w:"Stage 5 — the only agent allowed to book anything",c:"result = await Runner.run(plan_composer, ctx.to_json(), context=ctx)",on:["comp"]}],
+    [{a:"comp",t:"call",d:6,w:"Composes the plan and calls propose_plan once",c:"<b>propose_plan</b>(plan_id=\"PLN-2026-2201\", monthly_sip=74767, lump_sum=350000, instruments=11,\n  rules_satisfied=[R-RISK-03, R-EMG-01, R-HZN-01, R-SIP-01, R-TAX-01, R-TAX-02, R-ELIG-01, R-GOLD-01], rules_waived=[],\n  adviser=\"R. Menon\", summary=\"4 goals funded at 88% of surplus; direct-equity sleeve withheld on observed risk; house equity capped at 40% per PLN-2024-0931\")"}],
+    [{a:"human",t:"hitl",d:0,w:"needs_adviser_signoff → true (new plan; SIP ≥ ₹10k/mo). Run pauses; result.interruptions = [ToolApprovalItem(propose_plan)].",
+      c:"state = result.to_state()  # serialisable — adviser can act hours later\nawaiting adviser…",wait:["hitl"],so:{comp:"paused"},
+      fx:()=>decisionCard("warn","PLN-2026-2201 · ₹74,767/mo + ₹3.5 L lump sum","4 goals funded. Emergency fund complete by month 8; house equity capped at 40% with glide from Oct-2029; ELSS sized to 80C headroom; NPS for 80CCD(1B); REIT 5%; direct-equity sleeve 0%. Adviser approval required.",["PLN-2023-0412","PLN-2021-0077","PLN-2024-0931","PLN-2022-0188","R-HZN-01","R-SIP-01","R-TAX-01","R-ELIG-02"],true,"Approve plan","Return with notes")}],
+    [{a:"human",t:"await",d:0,w:"Waiting for the adviser in the Plan file panel →"}]
+  ],
+  approve:[
+    [{a:"human",t:"call",d:0,w:"Adviser R. Menon approves with a note",c:"state.approve(interruption, note=\"Agree with 0% direct equity; revisit after 12 months of uninterrupted SIPs.\")\nresult = await Runner.run(plan_composer, state, context=ctx)",done:["hitl"],so:{hitl:"approved"}}],
+    [{a:"comp",t:"final",d:3,w:"propose_plan executes · plan booked",c:"{status:\"BOOKED\", plan_id:\"PLN-2026-2201\", monthly_sip:74767, lump_sum:350000, instruments:11, approved_by:\"R. Menon\"}\nPlanProposal(peers_relied_on=[PLN-2023-0412, PLN-2021-0077, PLN-2024-0931, PLN-2022-0188], human_review_required=true)",done:["comp"],so:{comp:"BOOKED"},
+      fx:()=>booked("BOOKED · PLN-2026-2201 · ₹74,767/mo · lump ₹3.5 L\n6 SIP mandates · 2 switches · glide date Oct-2029 · next review Oct-2027\napproved_by: R. Menon (INA000012345) · audit_log: 23 entries","good")}],
+    [{a:"graph",t:"graph",d:0,w:"Plan written back as a new precedent — every edge carries its reasoning",c:"PLN-2026-2201 -PLANNED_FOR-> INV:Priya\n  -HOLDS-> 11 instruments (weight, goal, reasoning)\n  -SATISFIES-> 8 rules (fact that decided each)\n  -SIMILAR_TO-> PLN-2023-0412 (0.86) · PLN-2021-0077 (0.79)\n  -APPROVED_BY-> ADV:R. Menon (note)",g:{hl:["NEW-A","ADV:Menon"],keep:true,e:[["NEW-A","INV:Priya"]]}}]
+  ],
+  reject:[
+    [{a:"human",t:"call",d:0,w:"Adviser returns the plan with notes",c:"state.reject(interruption, rejection_message=\"Client wants lower volatility on the house goal: equity 30%. Hold ELSS until Form 12BB confirms the old regime.\")\nresult = await Runner.run(plan_composer, state, context=ctx)",done:["hitl"],so:{hitl:"returned"}}],
+    [{a:"comp",t:"final crit",d:4,w:"Plan Composer reads the note and drafts v2 — re-gated, nothing booked",c:"<b>propose_plan</b>(plan_id=\"PLN-2026-2201\", version=2, house_equity=0.30, elss_hold=true, monthly_sip=74767, …)\n→ needs_adviser_signoff → true again · interruptions = [ToolApprovalItem(propose_plan v2)]",done:["comp"],so:{comp:"v2 · paused"},
+      fx:()=>booked("RETURNED_FOR_REVISION · PLN-2026-2201 v2 drafted\nhouse sleeve 30/70 · ELSS on hold pending Form 12BB\nawaiting second adviser review · audit_log: 25 entries","crit")}]
+  ]
+},
+B: {
+  newNode:"NEW-B", cardTitle:"Active plan under review", stage0:"Monitoring",
+  card:{id:"PLN-2026-2201 · as of 05-Dec-2027", who:"Priya Raghavan · 35 · month 14", rows:[["Monthly SIP","₹78,500 after year-1 step-up"],["Portfolio","₹22.4 L across 11 instruments"],["Surplus","₹1.04 L/mo after +22% revision"],["Adviser","R. Menon"],["Last review","Oct-2027 · no action"]],
+        goals:[["Emergency fund","funded ✓"],["House down-payment","3.8 y left"],["Child's education","10.8 y left"],["Retire at 58","22.8 y left"]],
+        docs:["sip_ledger","nav_feed","hr_event","fund_research","property_index","form_12bb ✓"]},
+  ticks:[
+    [{a:"pipe",t:"agent_start",d:0,w:"monitor_plan(\"PLN-2026-2201\", as_of=\"2027-12-05\") — scheduled run, Stage 1 starts",c:"sig = await Runner.run(portfolio_monitor, \"as_of=2027-12-05\", context=ctx)",on:["mon"]}],
+    [{a:"mon",t:"call",d:4,w:"Ingests five feeds and records every signal with its evidence",c:"<b>ingest_signals</b>() →\n  SIP_MISS ×2        education mandate failed Oct, Nov 2027 (bank mandate limit lapsed after step-up)\n  DRIFT_CHECK        equity +31% since booking\n  LIFE_EVENT         salary revision +22% (HR feed, Nov-2027) → surplus ₹1.04 L\n  MANAGER_CHANGE     FND:Kestrel Flexi Cap lead manager exit, 18-Nov-2027\n  ASSUMPTION_BREACH  Bengaluru residential +11% y/y vs 5% assumed\n<b>record_signals</b>(5)",fx:signalsFill,g:{hl:["NEW-B","PLN-2026-2201"],vis:["NEW-B","PLN-2026-2201","INV:Priya"],e:[["NEW-B","PLN-2026-2201"],["PLN-2026-2201","INV:Priya"]]}}],
+    [{a:"pipe",t:"fan",d:0,w:"Signals in hand — Stage 2 fans out: Drift Analyst, Goal Tracker and Fund Quality Reviewer start together",c:"drift, track, fq = await asyncio.gather(\n  Runner.run(drift_analyst, ctx.to_json(), context=ctx),\n  Runner.run(goal_tracker, ctx.to_json(), context=ctx),\n  Runner.run(fund_quality_review, ctx.to_json(), context=ctx))",done:["mon"],on:["drift","track","fq"]}],
+    [{a:"drift",t:"call",d:4,w:"Compares every sleeve to its band",c:"<b>compute_drift</b>() →\n  house.equity      51% vs 40 ± 7  → BREACH (+4pp beyond band)   R-DRIFT-01\n  education.equity  69% vs 65 ± 8  → in band\n  retirement.equity 71% vs 65 ± 8  → in band\n  retirement.gold    4% vs 5 ± 3   → in band",fx:()=>driftFill(1),g:{hl:["RULE:HZN"],keep:true,e:[["NEW-B","RULE:HZN"]]}},
+     {a:"track",t:"call",d:5,w:"Re-projects the house goal with the revised property inflation",c:"<b>project_goal</b>(\"house\", property_inflation=0.08) → target ₹28.6 L (was ₹24.9 L) · corpus ₹11.9 L\n→ P(success) 78% → <b>61%</b> (−17pp)",fx:()=>trackFill(1)},
+     {a:"fq",t:"graph",d:4,w:"Reads the open event on the active fund and the rule that governs it",c:"<b>graph_fund_quality</b>(\"FND:Kestrel Flexi Cap\") → open_events [MANAGER_CHANGE 2027-11-18] · successor tenure 2.1y · rolling α +1.8% · rating hold 4★\n  -SUBJECT_TO-> RULE:R-FQ-02 → WATCH 2 quarters, no new money",fx:()=>fqFill(1),g:{hl:["FND:Flexi","RULE:FQ"],flag:["FND:Flexi"],keep:true,e:[["PLN-2026-2201","FND:Flexi"],["FND:Flexi","RULE:FQ"],["NEW-B","RULE:FQ"]]}}],
+    [{a:"drift",t:"call",d:3,w:"Proposes a tax-aware rebalance for the breached sleeve",c:"<b>rebalance_proposal</b>(\"house\") → sell ₹1.3 L FND:Arbor Nifty 50 Index → buy FND:Sarovar Short Duration\n  LTCG ≈ ₹38,000 · inside ₹1.25 L annual exemption → tax ₹0   R-TAX-04",fx:()=>driftFill(2),g:{hl:["FND:Nifty50","FND:ShortDur"],keep:true,e:[["PLN-2026-2201","FND:Nifty50"],["PLN-2026-2201","FND:ShortDur"]]}},
+     {a:"track",t:"call",d:4,w:"Education and retirement — missed SIPs are small; the rally and step-up put retirement ahead",c:"<b>project_goal</b>(\"education\") → 2 missed instalments = ₹26,400 behind · P 83% → 81%\n<b>project_goal</b>(\"retirement\") → P 74% → 88% (+14pp) · 10% step-up applied Oct-2027",fx:()=>trackFill(2)},
+     {a:"fq",t:"graph",d:4,w:"How did peers handle the same event?",c:"<b>graph_find_precedents</b>(event=\"MANAGER_CHANGE\") → 2 prior cases\n  both held through 2 quarters; switched only when rolling α turned negative\n  -APPROVED_BY-> ADV:R. Menon (note: \"manager change is a watch signal, not a sell signal\")",fx:()=>fqFill(2),g:{hl:["ADV:Menon"],keep:true}}],
+    [{a:"drift",t:"out",d:0,w:"DriftReport(1 breach, 1 rebalance) · lane done in 7s",done:["drift"],so:{drift:"7s · 1 breach"}},
+     {a:"track",t:"call",d:4,w:"Applies the life event: new surplus funds a step-up that restores the house goal",c:"<b>project_goal</b>(\"house\", extra_sip=6000) → P 61% → 72%\n<b>project_goal</b>(\"retirement\", extra_sip=12000) → P 88% → 91%\n→ step-up proposal from Jan-2028: house +₹6,000 · retirement +₹12,000 (new surplus ₹1.04 L, SIP 93k = 89% ≤ 90% ✓ R-SIP-01)",fx:()=>trackFill(3),g:{hl:["RULE:SIP"],keep:true}},
+     {a:"fq",t:"out",d:0,w:"FundQualityReport(1 fund WATCH) · lane done in 8s",done:["fq"],so:{fq:"8s · 1 WATCH"}}],
+    [{a:"track",t:"out",d:0,w:"GoalTracking returned · lane done in 13s — slowest lane, so Stage 2 wall clock = 13s",done:["track"],so:{track:"13s · house −17pp"}}],
+    [{a:"pipe",t:"fan",d:0,w:"gather() resolves — fan-in. triage() scores severity in plain Python.",c:"ctx.triage = triage(ctx)\n→ SIP_MISS 2 + DRIFT_BREACH 2 + GOAL_SLIP 3 + ASSUMPTION_BREACH 2 + MANAGER_CHANGE 1 + LIFE_EVENT 1 + house ΔP ≤ −10pp 3 = 14\n→ 14 ≥ threshold 5 → REVIEW_REQUIRED",on:["triage"],fx:triageFill}],
+    [{a:"pipe",t:"call",d:0,w:"Stage 4 — Review Proposer may only propose",c:"result = await Runner.run(review_proposer, ctx.to_json(), context=ctx)",done:["triage"],on:["rev"],so:{triage:"score 14"}}],
+    [{a:"rev",t:"call",d:6,w:"One propose_review call; every action cites a rule and a precedent",c:"<b>propose_review</b>(review_id=\"REV-2027-0318\", actions=[\n  {REBALANCE  house: sell ₹1.3 L Nifty 50 → Short Duration, LTCG ₹0,                 rule:R-DRIFT-01, R-TAX-04},\n  {RESUME_SIP education: re-authorise mandate at new limit + 2 catch-up instalments ₹26,400, rule:R-SIP-02},\n  {STEP_UP    house +₹6,000 · retirement +₹12,000 from Jan-2028,                         rule:R-SIP-01, precedent:PLN-2021-0077},\n  {WATCH      Kestrel Flexi Cap: freeze new money 2 quarters, route its SIP to Nifty 50, rule:R-FQ-02, precedent: 2 manager-change cases},\n  {ASSUMPTION property inflation 5% → 8%; house target ₹28.6 L}],\n  sip_delta=18000, rebalances=1, adviser=\"R. Menon\")"}],
+    [{a:"human",t:"hitl",d:0,w:"needs_adviser_signoff → true (rebalance present; SIP delta ₹18,000 ≥ ₹10k). Run pauses; interruptions = [ToolApprovalItem(propose_review)].",c:"state = result.to_state()\nawaiting adviser…",wait:["hitl"],so:{rev:"paused"},
+      fx:()=>decisionCard("warn","REV-2027-0318 · 5 actions · SIP +₹18,000/mo","Rebalance house sleeve (tax ₹0), resume education SIP with catch-up, step up house and retirement from the new surplus, put Kestrel Flexi Cap on watch, revise property inflation to 8%. Adviser approval required before any mandate changes.",["PLN-2026-2201","PLN-2021-0077","PLN-2024-0931","R-DRIFT-01","R-TAX-04","R-SIP-01","R-FQ-02"],true,"Approve review","Return with notes")}],
+    [{a:"human",t:"await",d:0,w:"Waiting for the adviser in the Plan file panel →"}]
+  ],
+  approve:[
+    [{a:"human",t:"call",d:0,w:"Adviser R. Menon approves all five actions",c:"state.approve(interruption, note=\"Client briefed on the call 06-Dec. Proceed; keep flexi on watch, review Jun-2028.\")\nresult = await Runner.run(review_proposer, state, context=ctx)",done:["hitl"],so:{hitl:"approved"}}],
+    [{a:"rev",t:"final",d:3,w:"propose_review executes · review booked",c:"{status:\"BOOKED\", review_id:\"REV-2027-0318\", actions:5, sip_delta:18000, rebalances:1, approved_by:\"R. Menon\"}",done:["rev"],so:{rev:"BOOKED"},
+      fx:()=>booked("BOOKED · REV-2027-0318 · 5 actions\nrebalance ₹1.3 L (LTCG ₹0) · mandate re-auth + ₹26,400 catch-up · step-up +₹18,000 from Jan-2028\nKestrel Flexi Cap → WATCH until Jun-2028 · property inflation 8%\napproved_by: R. Menon · audit_log: 17 entries","good")}],
+    [{a:"graph",t:"graph",d:0,w:"Review written back — triggers, actions, precedents and approver become the next investor's context",c:"REV-2027-0318 -REVIEWS-> PLN-2026-2201\n  -TRIGGERED_BY-> 5 signals (evidence) · -CITES-> R-DRIFT-01, R-TAX-04, R-SIP-01, R-FQ-02\n  -SIMILAR_TO-> PLN-2024-0931 (house-goal slippage, resolved differently)\n  -APPROVED_BY-> ADV:R. Menon · FND:Kestrel Flexi Cap.status = WATCH",g:{hl:["NEW-B","ADV:Menon"],keep:true}}]
+  ],
+  reject:[
+    [{a:"human",t:"call",d:0,w:"Adviser returns the review with notes",c:"state.reject(interruption, rejection_message=\"Client wants to keep Kestrel Flexi Cap and defer the house rebalance to the glide date. Resume SIP and step-up only.\")\nresult = await Runner.run(review_proposer, state, context=ctx)",done:["hitl"],so:{hitl:"returned"}}],
+    [{a:"rev",t:"final crit",d:4,w:"Review Proposer re-plans with two actions — still gated because the SIP delta is ≥ ₹10k",c:"<b>propose_review</b>(review_id=\"REV-2027-0318\", version=2, actions=[RESUME_SIP, STEP_UP], sip_delta=18000, rebalances=[])\n→ needs_adviser_signoff → true · interruptions = [ToolApprovalItem(propose_review v2)]",done:["rev"],so:{rev:"v2 · paused"},
+      fx:()=>booked("RETURNED_FOR_REVISION · REV-2027-0318 v2\nactions: RESUME_SIP · STEP_UP +₹18,000 · rebalance deferred to Oct-2029 glide · flexi held (adviser override logged)\nawaiting second adviser review · audit_log: 19 entries","crit")}]
+  ]
+}};
+
+/* ------------------------------------------------------------------ */
+/* State + rendering                                                   */
+/* ------------------------------------------------------------------ */
+let sc = "A", idx = 0, timer = null, queue = [], awaiting = false, tPar = 0, tSeq = 0, gstate = {vis:new Set(), e:new Set(), flag:new Set()};
+
+function renderCard(){
+  const c = SCEN[sc].card;
+  $("card-title").textContent = SCEN[sc].cardTitle;
+  $("claim-card").innerHTML = `<div class="claim-id">${c.id}</div><div class="claim-head">${c.who}</div>
+   <dl class="kv">${c.rows.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("")}</dl>
+   <ul class="goals">${c.goals.map(([g,h])=>`<li><b>${g}</b><span>${h}</span></li>`).join("")}</ul>
+   <div class="docs">${c.docs.map(d=>`<span class="doc">${d}</span>`).join("")}</div>`;
+  $("claim-stage").textContent = SCEN[sc].stage0; $("claim-stage").className="chip";
+}
+function stageHtml(s){ return `<div class="stage" id="st-${s.id}" style="--c:${AG[s.k].c}"><div class="sn"><span>${s.name||AG[s.k].n}</span><span class="st" id="stt-${s.id}"></span></div><div class="sr">${s.role}</div><div class="so" id="sto-${s.id}"></div></div>`; }
+function renderPipe(){
+  let h=""; const st=STAGES[sc];
+  st.forEach((s,i)=>{
+    if(s.lanes){ h += `<div class="fan">asyncio.gather</div><div class="lanes">${s.lanes.map(stageHtml).join("")}</div><div class="fan">fan-in</div>`; }
+    else { h += stageHtml(s); if(i<st.length-1 && !st[i+1].lanes) h += `<div class="conn"></div>`; }
+  });
+  $("pipe").innerHTML=h;
+}
+function renderFile(){
+  $("file").innerHTML = `<div class="ph"><h3>Plan file (shared PlanContext)</h3></div>` + FILE_SECTIONS[sc].map(([id,title,pend])=>`<div class="section" style="--c:var(--ag-${SEC_COLOR[id]})"><h4>${title} <span class="chip" id="s-${id}">pending</span></h4><div id="${id}-body"><p class="pending">${pend}</p></div></div>`).join("");
+}
+function sset(id,cls,txt){ const el=$("st-"+id); if(!el) return; el.classList.remove("active","waiting"); if(cls) el.classList.add(cls); if(txt!==undefined) $("stt-"+id).textContent=txt; }
+
+function renderGraph(){
+  const nodes = NODES.filter(n=>!n.only || n.only===sc);
+  const ids = new Set(nodes.map(n=>n.id));
+  const pos = Object.fromEntries(nodes.map(n=>[n.id,n]));
+  let s = `<svg class="graph" viewBox="0 0 1030 700" role="img" aria-label="Context graph of peer plans, instruments, rules and advisers">`;
+  EDGES.filter(([a,b])=>ids.has(a)&&ids.has(b)).forEach(([a,b,r])=>{
+    const A=pos[a],B=pos[b];
+    s += `<line class="ge" data-e="${a}|${b}" x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}"/>`;
+    const mx=A.x+(B.x-A.x)*0.5, my=A.y+(B.y-A.y)*0.5;
+    s += `<text class="gl" x="${mx}" y="${my-4}" text-anchor="middle">${r}</text>`;
+  });
+  nodes.forEach(n=>{
+    const isPlan = n.t==="Plan"||n.t==="New";
+    s += `<g class="gn t-${n.t}" data-id="${n.id}">`;
+    if(isPlan) s += `<rect class="shape" x="${n.x-58}" y="${n.y-20}" width="116" height="40" rx="5"/>`;
+    else if(n.t==="Instrument") s += `<rect class="shape" x="${n.x-20}" y="${n.y-20}" width="40" height="40" rx="4" transform="rotate(45 ${n.x} ${n.y})"/>`;
+    else if(n.t==="Rule") s += `<polygon class="shape" points="${n.x-20},${n.y} ${n.x-10},${n.y-17} ${n.x+10},${n.y-17} ${n.x+20},${n.y} ${n.x+10},${n.y+17} ${n.x-10},${n.y+17}"/>`;
+    else s += `<circle class="shape" cx="${n.x}" cy="${n.y}" r="20"/>`;
+    if(isPlan){
+      s += `<text x="${n.x}" y="${n.y-4}" text-anchor="middle" font-weight="600" style="font-family:var(--mono);font-size:10.5px">${n.l}</text><text class="sub" x="${n.x}" y="${n.y+10}" text-anchor="middle">${n.s}</text>`;
+      if(n.out) s += `<text class="out-chip out-${n.out}" x="${n.x}" y="${n.y+32}" text-anchor="middle">${n.out}</text>`;
+    } else {
+      s += `<text x="${n.x}" y="${n.y+34}" text-anchor="middle" font-weight="600">${n.l}</text><text class="sub" x="${n.x}" y="${n.y+46}" text-anchor="middle">${n.s}</text>`;
+    }
+    s += `</g>`;
+  });
+  s += `</svg>`;
+  $("graph-host").innerHTML = s;
+}
+let curHl = new Set();
+function applyGraph(g){
+  if(!g) return;
+  if(!g.keep && g.vis){ gstate.vis = new Set(g.vis); gstate.e = new Set((g.e||[]).map(p=>p.join("|"))); curHl = new Set(); }
+  else { (g.vis||[]).forEach(v=>gstate.vis.add(v)); (g.e||[]).forEach(p=>gstate.e.add(p.join("|"))); curHl = new Set(); }
+  (g.flag||[]).forEach(f=>gstate.flag.add(f));
+  (g.hl||[]).forEach(h=>{gstate.vis.add(h); curHl.add(h);});
+  paintGraph();
+}
+function paintGraph(){
+  document.querySelectorAll(".gn").forEach(el=>{
+    const id=el.dataset.id; el.classList.toggle("visited",gstate.vis.has(id)); el.classList.toggle("hl",curHl.has(id)); el.classList.toggle("flag",gstate.flag.has(id));
+    el.classList.toggle("dim", gstate.vis.size>0 && !gstate.vis.has(id));
+  });
+  document.querySelectorAll(".ge").forEach(el=>{
+    const [a,b]=el.dataset.e.split("|");
+    const on = gstate.e.has(a+"|"+b)||gstate.e.has(b+"|"+a);
+    el.classList.toggle("visited",on); el.classList.toggle("hl",on && (curHl.has(a)||curHl.has(b)));
+    el.classList.toggle("dim", gstate.vis.size>0 && !on);
+  });
+  $("graph-chip").textContent = `${gstate.vis.size} nodes visited · ${gstate.e.size} edges`;
+}
+function resetGraph(){ gstate={vis:new Set(),e:new Set(),flag:new Set()}; curHl=new Set(); renderGraph(); $("graph-chip").textContent="idle"; }
+
+function addTrace(st, par, lane){
+  const tr=$("trace"); if(tr.querySelector(".empty")) tr.innerHTML="";
+  const a=AG[st.a]; const div=document.createElement("div");
+  div.className="tr kind-"+st.t.split(" ")[0]+(st.t.includes("crit")?" crit":"")+(par?" par":""); div.style.setProperty("--c",a.c);
+  div.innerHTML=`<span class="bar"></span><div><div class="who">${a.n}${par?`<span class="lane">‖ lane ${lane}</span>`:""}</div><div class="what">${st.w}</div>${st.c?`<div class="call">${st.c}</div>`:""}</div>`;
+  tr.appendChild(div); tr.scrollTop=tr.scrollHeight;
+  $("trace-count").textContent = tr.querySelectorAll(".tr").length+" events";
+}
+function addTick(label, par){
+  const tr=$("trace"); if(tr.querySelector(".empty")) tr.innerHTML="";
+  const d=document.createElement("div"); d.className="tick"+(par?" par":""); d.textContent=label; tr.appendChild(d);
+}
+
+/* ------------------------------------------------------------------ */
+/* Playback engine — one tick per beat; parallel events land together  */
+/* ------------------------------------------------------------------ */
+function delay(){ return [2600,1900,1300,750,350][+$("speed").value-1]; }
+function setStatus(){
+  $("status").textContent = `${awaiting?"paused · awaiting adviser":timer?"running":"idle"} · tick ${idx} / ${queue.length}`;
+  $("ck-par").textContent = tPar+"s"; $("ck-seq").textContent = tSeq+"s";
+  $("ck-save").textContent = tSeq>tPar ? `−${Math.round((1-tPar/tSeq)*100)}%` : "";
+}
+function runTick(){
+  if(idx>=queue.length){ stop(); return false; }
+  const tick=queue[idx++]; const par = tick.length>1;
+  const dmax = Math.max(...tick.map(s=>s.d||0)), dsum = tick.reduce((s,x)=>s+(x.d||0),0);
+  if(dmax>0) addTick(par ? `t+${tPar}s → t+${tPar+dmax}s · ${tick.length} lanes concurrent (${tick.map(s=>s.d+"s").join(" ‖ ")})` : `t+${tPar}s → t+${tPar+dmax}s`, par);
+  tick.forEach((st,i)=>{
+    addTrace(st, par, i+1);
+    (st.on||[]).forEach(id=>sset(id,"active","running"));
+    (st.done||[]).forEach(id=>sset(id,"done","✓"));
+    (st.wait||[]).forEach(id=>sset(id,"waiting","paused"));
+    (st.skip||[]).forEach(id=>sset(id,"skip","—"));
+    if(st.so) Object.entries(st.so).forEach(([id,txt])=>{ const o=$("sto-"+id); if(o) o.textContent=txt; });
+    if(st.g) applyGraph(st.g);
+    if(st.fx) st.fx();
+    if(st.t==="await"){ awaiting=true; }
+    if(st.t==="agent_start") $("claim-stage").textContent = sc==="A" ? "Planning" : "Reviewing";
+  });
+  tPar += dmax; tSeq += dsum;
+  if(awaiting) stop();
+  setStatus();
+  return true;
+}
+function play(){ if(timer||awaiting) return; timer=setInterval(()=>{ if(!runTick()) stop(); }, delay()); $("play").textContent="❚❚ Pause"; setStatus(); }
+function stop(){ clearInterval(timer); timer=null; $("play").textContent= idx>=queue.length&&!awaiting ? "✓ Done" : "▶ Run agents"; setStatus(); }
+function resume(kind){
+  if(!awaiting) return; awaiting=false;
+  queue = queue.concat(SCEN[sc][kind]); sset("hitl","active","deciding"); play();
+}
+function reset(){
+  stop(); idx=0; awaiting=false; tPar=0; tSeq=0; queue=[...SCEN[sc].ticks];
+  $("trace").innerHTML='<div class="empty">Press <b>Run agents</b> to start the pipeline.</div>'; $("trace-count").textContent="0 events";
+  renderCard(); renderPipe(); renderFile(); resetGraph(); $("play").textContent="▶ Run agents"; setStatus();
+}
+$("play").onclick=()=>{ if(timer) stop(); else if(idx>=queue.length&&!awaiting) {reset(); play();} else play(); };
+$("step").onclick=()=>{ if(timer) stop(); if(!awaiting) runTick(); };
+$("reset").onclick=reset;
+$("scA").onclick=()=>{ sc="A"; $("scA").setAttribute("aria-pressed","true"); $("scB").setAttribute("aria-pressed","false"); reset(); };
+$("scB").onclick=()=>{ sc="B"; $("scB").setAttribute("aria-pressed","true"); $("scA").setAttribute("aria-pressed","false"); reset(); };
+
+/* tabs */
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected", x===b));
+  document.querySelectorAll(".view").forEach(v=>v.hidden = v.id!=="view-"+b.dataset.view);
+  try{ localStorage.setItem("gw-tab", b.dataset.view); }catch(e){}
+});
+
+/* code viewer */
+function showFile(name){
+  document.querySelectorAll("#files button").forEach(b=>b.setAttribute("aria-selected", b.textContent===name));
+  const el=$("code"); el.textContent=FILES[name]; el.className = name.endsWith(".md") ? "language-markdown" : "language-python";
+  if(window.hljs){ el.removeAttribute("data-highlighted"); try{ hljs.highlightElement(el); }catch(e){} }
+}
+$("files").innerHTML = Object.keys(FILES).map(f=>`<button>${f}</button>`).join("");
+document.querySelectorAll("#files button").forEach(b=>b.onclick=()=>showFile(b.textContent));
+showFile("run_plan.py");
+
+/* boot */
+reset();
+try{ const t=localStorage.getItem("gw-tab"); if(t) document.querySelector(`.tab[data-view="${t}"]`)?.click(); }catch(e){}
+</script>
+
+</body>
+</html>
