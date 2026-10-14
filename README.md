@@ -6,6 +6,9 @@ Every recommendation carries its **reasoning**, the **peers** it was benchmarked
 
 ## Live demos
 
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/) **Streamlit app:** `https://<your-app-name>.streamlit.app` — set this URL after the one-time deploy below. Both demos and a live *Plan maths* page in one place.
+
+
 | Demo | Open it | What it shows |
 |---|---|---|
 | **Goalwright app** — consumer product | [GitHub Pages](https://aditig2024-lab.github.io/Investment_Planner/) · [HTML preview](https://htmlpreview.github.io/?https://github.com/aditig2024-lab/Investment_Planner/blob/main/index.html) · [Claude artifact](https://claude.ai/artifact/TGgwf6LfeFajEJLMeCARDV) | Sign in as one of two demo investors and take the guided walkthrough: **Priya** (34, Bengaluru — first plan, ready to accept) or **Arjun** (42, Pune — 13-month check-up with an adviser-approved review). Home, My plan, Check-ups, Ask Goalwright, Profile & risk. |
@@ -17,6 +20,24 @@ Both pages are single self-contained HTML files — open `index.html` or `consol
 > - **GitHub Pages**: in *Settings → Pages*, set *Source* to *Deploy from a branch*, branch `main`, folder `/ (root)`. The two Pages links above go live within a minute.
 > - **HTML preview**: works immediately for a public repository, no setup.
 > - **Claude artifacts**: private by default. Open each artifact, use its *Share* menu and choose *Anyone with the link* to make them public.
+
+## Deploy as a Streamlit app
+
+The repo is a ready-to-run Streamlit project: `streamlit_app.py` serves the investor app and the agent console and adds a native **Plan maths** page that calls the same `demo/rules.py` functions the Goal Planner agent uses.
+
+Run locally:
+
+```bash
+pip install -r requirements.txt
+streamlit run streamlit_app.py
+```
+
+Deploy on Streamlit Community Cloud (free, one time):
+
+1. Push this repo to GitHub (public).
+2. Go to [share.streamlit.io](https://share.streamlit.io) → **Create app** → *Deploy a public app from GitHub*.
+3. Repository `aditig2024-lab/Investment_Planner` · branch `main` · main file `streamlit_app.py` · pick an app URL.
+4. Click **Deploy**. Paste the resulting `https://….streamlit.app` link into the badge line above.
 
 ## How it works
 
@@ -70,10 +91,13 @@ python monitor.py PLN-2026-2201 2027-12-05  # run a monitoring review
 ## Repository layout
 
 ```
-index.html      Goalwright consumer app (two demo investors, guided walkthroughs)
-console.html    Goalwright console (agent pipeline + context graph replay, architecture, code)
-demo/           runnable OpenAI Agents SDK project
-.nojekyll       lets GitHub Pages serve the HTML files as-is
+streamlit_app.py   Streamlit deployment: Investor app · Agent console · Plan maths · About
+requirements.txt   streamlit
+.streamlit/        theme
+index.html         Goalwright consumer app (two demo investors, guided walkthroughs)
+console.html       Goalwright console (agent pipeline + context graph replay, architecture, code)
+demo/              runnable OpenAI Agents SDK project (its own requirements.txt)
+.nojekyll          lets GitHub Pages serve the HTML files as-is
 ```
 
 ---

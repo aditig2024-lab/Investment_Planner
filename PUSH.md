@@ -1,28 +1,31 @@
-# Push this folder to GitHub
+# Push, then deploy
 
-Unzip `Investment_Planner_repo.zip`, open a terminal in the unzipped folder, then:
+## 1. Push (run in PowerShell — short path avoids Windows' 260-character limit)
 
-```bash
-# if the repo on GitHub is still empty
+```powershell
+New-Item -ItemType Directory -Force C:\Projects | Out-Null
+Expand-Archive -Force .\Investment_Planner_repo.zip C:\Projects\Investment_Planner
+cd C:\Projects\Investment_Planner
 git init -b main
 git add .
-git commit -m "Goalwright: consumer app, agent console, runnable demo"
+git commit -m "Goalwright: Streamlit app, consumer app, agent console, runnable demo"
 git remote add origin https://github.com/aditig2024-lab/Investment_Planner.git
 git push -u origin main
 ```
 
-```bash
-# if the repo already has commits (e.g. a README created on GitHub)
-git clone https://github.com/aditig2024-lab/Investment_Planner.git
-# copy everything from the unzipped folder into the clone (overwrite README.md), then
-cd Investment_Planner
-git add .
-git commit -m "Goalwright: consumer app, agent console, runnable demo"
-git push
-```
+If GitHub already has a commit in the repo:
+`git pull origin main --allow-unrelated-histories` (keep this README.md), then `git push -u origin main`.
 
-Then, once:
-1. **GitHub Pages** — Settings → Pages → Source: *Deploy from a branch* → `main` / `/ (root)` → Save.
-   Live in ~1 minute at https://aditig2024-lab.github.io/Investment_Planner/ (app) and …/console.html (console).
-2. **Claude artifacts** — open each artifact link in the README → *Share* → *Anyone with the link*.
-   (The HTML-preview links in the README work immediately for a public repo, no setup.)
+If you already ran the earlier commands in a folder that already has `.git` and `origin`: just `git add . ; git commit -m "Add Streamlit app" ; git push`.
+
+## 2. Deploy the Streamlit app (one time)
+
+1. https://share.streamlit.io → sign in with GitHub → **Create app** → *Deploy a public app from GitHub*
+2. Repository `aditig2024-lab/Investment_Planner` · Branch `main` · Main file path `streamlit_app.py`
+3. Choose an app URL (e.g. `goalwright`) → **Deploy**
+4. Copy the `https://….streamlit.app` URL into the badge line at the top of README.md's *Live demos* section, commit, push.
+
+## 3. Make the plain-HTML links public too
+
+- GitHub Pages: Settings → Pages → Source *Deploy from a branch* → `main` / `/ (root)` → Save.
+- Claude artifacts: open each link in the README → *Share* → *Anyone with the link*.
